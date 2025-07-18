@@ -1,0 +1,75 @@
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+  color: #333;
+  margin: 0;
+  padding: 16px;
+  width: 320px;
+  box-sizing: border-box;
+}
+
+h2 {
+  text-align: center;
+  color: #3a3a7c;
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+select,
+input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border 0.2s ease;
+}
+
+select:focus,
+input[type="text"]:focus {
+  border-color: #5c7cfa;
+  outline: none;
+}
+
+button {
+  margin-top: 16px;
+  width: 100%;
+  background-color: #5c7cfa;
+  color: white;
+  padding: 10px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+button:hover {
+  background-color: #4b6ed6;
+}
+
+pre {
+  margin-top: 12px;
+  background-color: #f1f3f5;
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 180px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  font-family: Consolas, monospace;
+  font-size: 13px;
+  color: #212529;
+  border: 1px solid #dee2e6;
+}
+
+#operation-section {
+  margin-top: 10px;
+}

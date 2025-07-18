@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AUC Math Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/dist/mathlive.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mathlive/dist/mathlive.min.js"></script>
+</head>
+<body>
+  <h2>AUC Math Calculator</h2>
+
+  <label for="course">Select Course:</label>
+  <select id="course">
+    <option value="" selected disabled>-- Select a Course --</option>
+    <option value="calc3">Calculus 3</option>
+    <option value="ode" disabled>Differential Equations (soon)</option>
+    <option value="linear" disabled>Linear Algebra (soon)</option>
+  </select>
+
+  <div id="operation-section" style="display: none;">
+    <label for="operation">Select Operation:</label>
+    <select id="operation">
+      <option value="">-- Select an Operation --</option>
+      <option value="partial_derivative">Partial Derivative</option>
+      <option value="gradient">Gradient</option>
+      <option value="multiple_integral">Multiple Integral (Double or Triple) </option>
+      <option value="divergence">Divergence</option>
+      <option value="curl">Curl</option>
+      <option value="line_integral">Line Integral</option>
+      <option value="surface_integral">Surface Integral</option>
+      <option value="directional_derivative">Directional Derivative</option>
+      <option value="greens_theorem">Green's Theorem</option>
+      <option value="stokes_theorem">Stokes' Theorem</option>
+      <option value="lagrange_multipliers">Lagrange Multipliers</option>
+    </select>
+
+    <label for="mathfield">Expression / Vector Field:</label>
+    <math-field id="mathfield" virtual-keyboard-mode="manual" style="width: 100%;"></math-field>
+
+    <label for="variables">Variables:</label>
+    <input type="text" id="variables" placeholder='e.g. ["x", "y", "z"]'>
+
+    <label for="extra">Extra Input (optional):</label>
+    <math-field id="constraintField" style="width: 100%; display: none;"></math-field>
+
+    <button id="calculate">Calculate</button>
+  </div>
+
+  <h3>Result:</h3>
+  <pre id="result"></pre>
+
+  <script src="popup.js"></script>
+</body>
+</html>
