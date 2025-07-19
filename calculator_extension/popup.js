@@ -1,153 +1,94 @@
-// Wait until the popup is fully loaded
 document.addEventListener("DOMContentLoaded", function () {
   const courseSelect = document.getElementById("course");
-  const operationSelect = document.getElementById("operation");
-  const mathField = document.getElementById("mathfield");
-  const variablesInput = document.getElementById("variables");
-  const extraInput = document.getElementById("extra");
-  const resultBox = document.getElementById("result");
-  const calcButton = document.getElementById("calculate");
   const operationSection = document.getElementById("operation-section");
+  const mathField = document.getElementById("mathfield");
+  const result = document.getElementById("result");
 
-  // Helper: show/hide elements
-  function showElement(el) {
-    el.parentElement.style.display = "block";
+  // LaTeX templates for each operation
+  const latexTemplates = {
+    partial_derivative: '\\frac{\\partial}{\\partial x} f(x, y)',
+    gradient: '\\nabla f(x, y)',
+    multiple_integral: '\\iint_R f(x, y)\\,dx\\,dy',
+    divergence: '\\nabla \\cdot \\vec{F}(x, y, z)',
+    curl: '\\nabla \\times \\vec{F}(x, y, z)',
+    line_integral: '\\oint_C \\vec{F} \\cdot d\\vec{r}',
+    surface_integral: '\\iint_S \\vec{F} \\cdot d\\vec{S}',
+    directional_derivative: '\\nabla f(x, y) \\cdot \\vec{u}',
+    greens_theorem: '\\oint_C \\vec{F} \\cdot d\\vec{r} = \\iint_R \\left(\\frac{\\partial Q}{\\partial x} - \\frac{\\partial P}{\\partial y}\\right)\\,dx\\,dy',
+    stokes_theorem: '\\iint_S \\nabla \\times \\vec{F} \\cdot d\\vec{S} = \\oint_C \\vec{F} \\cdot d\\vec{r}',
+    lagrange_multipliers: '\\nabla f(x, y) = \\lambda \\nabla g(x, y)',
+  };
+
+  const savedCourse = localStorage.getItem("selectedCourse");
+  if (savedCourse) {
+    courseSelect.value = savedCourse;
   }
 
-  function hideElement(el) {
-    el.parentElement.style.display = "none";
-  }
+  // Save selection and toggle operation section
+  courseSelect.addEventListener("change", () => {
+    const selected = courseSelect.value;
+    localStorage.setItem("selectedCourse", selected);
 
-  // Helper: parse "x in [0,1], y in [0,2]" → [["x", 0, 1], ["y", 0, 2]]
-  function parseLimits(input) {
-    try {
-      const terms = input.split(",").map(s => s.trim());
-      return terms.map(term => {
-        const [varName, range] = term.split("in").map(s => s.trim());
-        const bounds = range.replace("[", "").replace("]", "").split(/\s*[,;]\s*/);
-        return [varName, parseFloat(bounds[0]), parseFloat(bounds[1])];
-      });
-    } catch {
-      return [];
-    }
-  }
-
-  // Helper: parse "x y z" or "x, y, z" → ["x", "y", "z"]
-  function parseVariables(input) {
-    return input.split(/[\s,]+/).map(s => s.trim()).filter(s => s.length > 0);
-  }
-
-  // Dynamically update visible fields based on operation
-  operationSelect.addEventListener("change", function () {
-    const op = operationSelect.value;
-
-    // Reset
-    mathField.value = "";
-    variablesInput.value = "";
-    extraInput.value = "";
-
-    // Show/hide fields based on operation
-    showElement(mathField);
-    hideElement(extraInput);
-    showElement(variablesInput);
-
-    if (["line_integral", "surface_integral", "directional_derivative", "lagrange_multipliers", "multiple_integral", "stokes_theorem"].includes(op)) {
-      showElement(extraInput);
-    }
-
-    // Custom placeholders
-    switch (op) {
-      case "partial_derivative":
-        mathField.placeholder = "e.g. 2xy + sin(t)";
-        variablesInput.placeholder = "e.g. x t";
-        extraInput.placeholder = ""; break;
-
-      case "gradient":
-        variablesInput.placeholder = "e.g. x y z";
-        break;
-
-      case "multiple_integral":
-        extraInput.placeholder = "e.g. x in [0,1], y in [0,2]";
-        break;
-
-      case "directional_derivative":
-        extraInput.placeholder = "Direction vector: e.g. 1, 1";
-        break;
-
-      case "line_integral":
-        extraInput.placeholder = "Param: t; Curve: t, t^2, t^3";
-        break;
-
-      case "surface_integral":
-        extraInput.placeholder = "Params: u, v; Surface: u, v, u*v; Bounds: u [0,1], v [0,2]";
-        break;
-
-      case "lagrange_multipliers":
-        mathField.placeholder = "f(x,y)";
-        variablesInput.placeholder = "x y";
-        extraInput.placeholder = "Constraint: g(x,y)";
-        break;
+    if (selected === "calc3") {
+      operationSection.style.display = "block";
+    } else {
+      operationSection.style.display = "none";
     }
   });
 
-  courseSelect.addEventListener("change", function () {
-  const selected = courseSelect.value;
-
-    console.log("Course selected raw:", courseSelect.selectedIndex, selected, operationSection);
-
-  if (selected && selected === "calc3") {
-    operationSection.style.display = "block";
-    console.log("Showing operation section for Calculus 3");
-  } else {
-    operationSection.style.display = "none";
+  // Restore course selection from localStorage
+  if (savedCourse) {
+    courseSelect.dispatchEvent(new Event("change"));
   }
-});
-  // Handle Calculate button click
-  calcButton.addEventListener("click", async function () {
-    const operation = operationSelect.value;
-    const expr = mathField.getValue();  // Get LaTeX directly from MathLive
-    const vars = parseVariables(variablesInput.value);
-    const extra = extraInput.value;
 
-    let payload = { operation, expression: expr, variables: vars };
+  // Initialize math field with previous value
+  const savedExpression = localStorage.getItem("savedExpression");
+  if (savedExpression) {
+    mathField.setValue(savedExpression);
+  }
 
-    // Add operation-specific input handling
-    if (operation === "multiple_integral") {
-      payload["limits"] = parseLimits(extra);
-    } else if (operation === "directional_derivative") {
-      const dir = extra.split(/[\s,]+/).map(Number);
-      payload["direction"] = dir;
-    } else if (operation === "lagrange_multipliers") {
-      payload["constraint"] = mathField.getValue();  // Get constraint from MathLive
-    } else if (operation === "line_integral") {
-      const parts = extra.split(";");
-      payload["param"] = parts[0].trim();  // e.g. t
-      payload["curve"] = parts[1].split(",").map(s => s.trim());
-    } else if (operation === "surface_integral" || operation === "stokes_theorem") {
-      const parts = extra.split(";");
-      payload["params"] = parseVariables(parts[0]);       // e.g. u, v
-      payload["surface"] = parts[1].split(",").map(e => mathField.getValue());  // Get surface from MathLive
-      if (parts[2]) {
-        payload["bounds"] = parseLimits(parts[2]);
-      }
+  // store the value in the local storage on input
+  mathField.addEventListener("input", () => {
+  localStorage.setItem("savedExpression", mathField.getValue());
+  });
+
+  // Handle operation button clicks
+  document.querySelectorAll("#operation-buttons button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const op = btn.dataset.op;
+      mathField.setValue(latexTemplates[op] || "");
+      localStorage.setItem("savedExpression", mathField.getValue());
+    });
+  });
+
+  // Handle Calculate button
+  document.getElementById("calculate").addEventListener("click", async () => {
+    const latexInput = mathField.getValue().trim();
+
+    if (!latexInput) {
+      result.textContent = "Please enter a valid expression.";
+      return;
     }
 
-    // Send POST request to backend
+    result.textContent = "Calculating...";
+
     try {
-      const res = await fetch("http://localhost:5000/solve", {
+      const response = await fetch("http://localhost:5000/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ latex: latexInput }),
       });
 
-      const data = await res.json();
-      resultBox.textContent = data.result || JSON.stringify(data);
+      const data = await response.json();
+
+      if (response.ok) {
+        result.textContent = data.result || "No result returned.";
+      } else {
+        result.textContent = data.error || "An error occurred.";
+      }
     } catch (err) {
-      resultBox.textContent = "Error: " + err.message;
+      result.textContent = "Failed to connect to backend.";
+      console.error(err);
     }
   });
-  // Re-run logic if course was already selected (e.g. after reload)
-    if (courseSelect.value === "calc3") {
-        operationSection.style.display = "block";
-    }
 });

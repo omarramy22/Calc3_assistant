@@ -73,3 +73,40 @@ pre {
 #operation-section {
   margin-top: 10px;
 }
+
+#operation-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+#operation-buttons button {
+  padding: 4px 6px;
+  font-size: 0.65rem;
+  background-color: #007acc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+#operation-buttons button:hover {
+  background-color: #005fa3;
+}
+
+#operation-buttons button.active {
+      background-color: #cce0ff;
+      font-weight: bold;
+    }
+
+    math-field {
+      font-size: 1.2rem;
+    }
+
+    #operation-section {
+      margin-top: 20px;
+    }
