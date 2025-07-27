@@ -1,5 +1,4 @@
-from sympy import symbols, Matrix, diff, sympify, integrate, sqrt
-
+from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral
 def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
 
     try:
@@ -19,24 +18,57 @@ def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-def solve_gradient(expr: str, variables: list) -> list:
+def solve_arc_length(exprs: list, param: str, a: str, b: str) -> str:
+
+    try:
+        t = param
+        a = sympify(a)
+        b = sympify(b)
+
+        components = [sympify(expr) for expr in exprs]
+        derivatives = [diff(comp, t) for comp in components]
+        integrand = sqrt(sum(d**2 for d in derivatives))
+
+        result = integrate(integrand, (t, a, b)).doit()
+        if isinstance(result, Integral):
+            result = result.evalf()
+            result = round(result, 5)
+        return str(result)
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def solve_gradient(expr: str, variables: list) -> str:
     try:
         expression = sympify(expr)
         sym_vars = [symbols(v) for v in variables]
-        grad = [str(diff(expression, var)) for var in sym_vars]
-        return grad
+        grad = [diff(expression, var) for var in sym_vars]
+
+        # Choose unit vectors dynamically
+        unit_vectors = ['i', 'j', 'k', 'l', 'm', 'n']  # add more if needed
+
+        if len(grad) > len(unit_vectors):
+            return "Error: Not enough unit vector symbols defined."
+
+        terms = [f"{grad[i]}*{unit_vectors[i]}" for i in range(len(grad))]
+        return " + ".join(terms)
     except Exception as e:
-        return [f"Error: {str(e)}"]
+        return f"Error: {str(e)}"
 
 def solve_multiple_integral(expr: str, limits: list) -> str:
     try:
         expression = sympify(expr)
-        sym_limits = [(symbols(var), a, b) for (var, a, b) in limits]
-        result = integrate(expression, *sym_limits)
-        return str(result)
+
+        for var, a, b in reversed(limits):
+            var_sym = symbols(var)
+            a_sym = sympify(a)
+            b_sym = sympify(b)
+            expression = integrate(expression, (var_sym, a_sym, b_sym)).doit()
+
+        return str(expression)
     except Exception as e:
         return f"Error: {str(e)}"
-
+    
 # Divergence
 def solve_divergence(vector_field: list, variables: list) -> str:
     try:
@@ -66,37 +98,66 @@ def solve_curl(vector_field: list[str], variables: list[str]) -> list[str]:
         return [f"Error: {str(e)}"]
 
 # Line integral 
-def solve_line_integral(vector_field: list, param: str, curve: list, param_bounds: list = [0, 1]) -> list:
+from sympy import symbols, Matrix, sympify, sqrt, integrate
+
+def solve_line_integral(field, param: str, curve: list, param_bounds: list = [0, 1]) -> str:
     try:
         t = symbols(param)
         a, b = param_bounds
         r = Matrix([sympify(f) for f in curve])
         dr = r.diff(t)
-        F = Matrix([sympify(f) for f in vector_field])
-        F_sub = F.subs({symbols('x'): r[0], symbols('y'): r[1], symbols('z'): r[2]})
-        dot = F_sub.dot(dr)
-        result = integrate(dot, (t, a, b))
-        return str(result)
+        subs_map = {symbols(var): r[i] for i, var in enumerate('xyz'[:len(r)])}
+
+        # Auto-detect field type
+        if isinstance(field, str):
+            # Scalar field: ∫ f(x, y, ...) ds
+            f = sympify(field).subs(subs_map)
+            magnitude = sqrt(sum(comp**2 for comp in dr))
+            integrand = f * magnitude
+        elif isinstance(field, (list, Matrix)):
+            # Vector field: ∫ F · dr
+            F = Matrix([sympify(f) for f in field])
+            F_sub = F.subs(subs_map)
+            integrand = F_sub.dot(dr)
+        else:
+            return "Error: Field must be a string or list"
+
+        result = integrate(integrand, (t, a, b))
+        return str(result.evalf())
+
     except Exception as e:
-        return [f"Error: {str(e)}"]
+        return f"Error: {str(e)}"
+
 
 # Surface integral 
-def solve_surface_integral(vector_field, params, surface, bounds):
+def solve_surface_integral(field, params, surface, bounds):
     try:
         u, v = symbols(params)
+        x, y, z = symbols("x y z")
         r = Matrix([sympify(expr) for expr in surface])
         ru = r.diff(u)
         rv = r.diff(v)
         normal_vector = ru.cross(rv)
+        normal_magnitude = sqrt(normal_vector.dot(normal_vector))
 
-        F = Matrix([sympify(f) for f in vector_field])
-        x, y, z = symbols("x y z")
+        is_vector = isinstance(field, list) and len(field) == 3
+        is_scalar = isinstance(field, str) or (isinstance(field, list) and len(field) == 1)
         substitutions = {x: r[0], y: r[1], z: r[2]}
-        F_sub = F.subs(substitutions)
 
-        integrand = F_sub.dot(normal_vector)
+        if is_vector:
+            F = Matrix([sympify(f) for f in field])
+            F_sub = F.subs(substitutions)
+            integrand = F_sub.dot(normal_vector)
+        elif is_scalar:
+            f = sympify(field if isinstance(field, str) else field[0])
+            f_sub = f.subs(substitutions)
+            integrand = f_sub * normal_magnitude
+        else:
+            return "Error: Could not determine field type (expected scalar or 3D vector)."
+
         result = integrate(integrand, (u, bounds[0][0], bounds[0][1]), (v, bounds[1][0], bounds[1][1]))
         return str(result)
+
     except Exception as e:
         return f"Error: {str(e)}"
     
@@ -120,7 +181,6 @@ def solve_directional_derivative(expr: str, variables: list, direction: list) ->
         return str(directional_derivative)
     except Exception as e:
         return f"Error: {str(e)}"
-
 def solve_greens_theorem(vector_field: list, variables: list) -> str:
     try:
         x, y = [symbols(v) for v in variables]
@@ -156,24 +216,38 @@ def solve_stokes_theorem(vector_field: list, params: list, surface: list, bounds
         return f"Error: {str(e)}"
 
 
-def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list) -> dict:
+def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr: str = None) -> dict:
     try:
-        from sympy import Eq, solve, symbols, sympify
-
         sym_vars = [symbols(v) for v in variables]
         f = sympify(f_expr)
         g = sympify(g_expr)
         λ = symbols('λ')
 
-        eqs = [
-            Eq(diff(f, var), λ * diff(g, var))
-            for var in sym_vars
-        ] + [Eq(g, 0)]
+        eqs = []
+        
+        if h_expr:
+            h = sympify(h_expr)
+            μ = symbols('μ')
+            eqs += [Eq(diff(f, var), λ * diff(g, var) + μ * diff(h, var)) for var in sym_vars]
+            eqs.append(Eq(g, 0))
+            eqs.append(Eq(h, 0))
+            unknowns = sym_vars + [λ, μ]
+        else:
+            # Only one constraint
+            eqs += [Eq(diff(f, var), λ * diff(g, var)) for var in sym_vars]
+            eqs.append(Eq(g, 0))
+            unknowns = sym_vars + [λ]
 
-        sol = solve(eqs, sym_vars + [λ], dict=True)
-        return {str(k): str(v) for s in sol for k, v in s.items()}
+        sol = solve(eqs, unknowns, dict=True)
+        real_solutions = []
+        for s in sol:
+            if all(v.is_real for v in s.values()):
+                f_val = f.subs(s)
+                s_eval = {str(k): str(v) for k, v in s.items()}
+                s_eval["f_value"] = f_val
+                real_solutions.append(s_eval)
+            return real_solutions
+        else:
+            return {"solutions": [], "message": "No real solutions found."}
     except Exception as e:
         return {"error": str(e)}
-
-
-

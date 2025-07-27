@@ -7,17 +7,20 @@ document.addEventListener("DOMContentLoaded", function () {
   // LaTeX templates for each operation
   const latexTemplates = {
     partial_derivative: '\\frac{\\partial}{\\partial x} f(x, y)',
-    gradient: '\\nabla f(x, y)',
-    multiple_integral: '\\iint_R f(x, y)\\,dx\\,dy',
+    arc_length: '\\htmlClass{arc}{\\int_{0}^{1} \\sqrt{\\left(\\frac{d}{dt}x(t)\\right)^2 + \\left(\\frac{d}{dt}y(t)\\right)^2 + \\left(\\frac{d}{dt}z(t)\\right)^2} \\, dt}',
+    gradient: '\\htmlClass{gradient}{\\nabla f(x, y, z)}',
+    double_integral: '\\int_{0}^{1} \\int_{0}^{1} () \\, dy\\, dx',
+    triple_integral: '\\int_{0}^{1} \\int_{0}^{1} \\int_{0}^{1} () \\, dz\\, dy\\, dx',
     divergence: '\\nabla \\cdot \\vec{F}(x, y, z)',
     curl: '\\nabla \\times \\vec{F}(x, y, z)',
     line_integral: '\\oint_C \\vec{F} \\cdot d\\vec{r}',
     surface_integral: '\\iint_S \\vec{F} \\cdot d\\vec{S}',
-    directional_derivative: '\\nabla f(x, y) \\cdot \\vec{u}',
+    directional_derivative: '\\htmlClass{directional}{\\nabla f(x, y, z) \\cdot (r_x, r_y, r_z)}',
     greens_theorem: '\\oint_C \\vec{F} \\cdot d\\vec{r} = \\iint_R \\left(\\frac{\\partial Q}{\\partial x} - \\frac{\\partial P}{\\partial y}\\right)\\,dx\\,dy',
     stokes_theorem: '\\iint_S \\nabla \\times \\vec{F} \\cdot d\\vec{S} = \\oint_C \\vec{F} \\cdot d\\vec{r}',
     lagrange_multipliers: '\\nabla f(x, y) = \\lambda \\nabla g(x, y)',
   };
+  
 
   const savedCourse = localStorage.getItem("selectedCourse");
   if (savedCourse) {
@@ -56,7 +59,8 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("#operation-buttons button").forEach((btn) => {
     btn.addEventListener("click", () => {
       const op = btn.dataset.op;
-      mathField.setValue(latexTemplates[op] || "");
+      mathField.focus();
+      mathField.insert(latexTemplates[op] || "");
       localStorage.setItem("savedExpression", mathField.getValue());
     });
   });
@@ -64,8 +68,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // Handle Calculate button
   document.getElementById("calculate").addEventListener("click", async () => {
     const latexInput = mathField.getValue().trim();
+    const safeLatex = latexInput.replace(/(\w)\^\{\s*\}/g, "$1");
 
-    if (!latexInput) {
+
+    if (!safeLatex || safeLatex === "") {
       result.textContent = "Please enter a valid expression.";
       return;
     }
@@ -76,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch("http://localhost:5000/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ latex: latexInput }),
+        body: JSON.stringify({ latex: safeLatex }),
       });
 
       const data = await response.json();
