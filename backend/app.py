@@ -104,6 +104,18 @@ def solve():
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+    elif result["type"] == "vector_line_integral":
+        try:
+            return jsonify({
+                "result": solve_line_integral(
+                    result["field"],
+                    result["param"],
+                    result["curve"],
+                    result["bounds"]
+                )
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     elif result["type"] == "raw_expression":
         return jsonify({"result": "Unrecognized symbolic operation"})
 

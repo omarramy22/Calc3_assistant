@@ -132,7 +132,7 @@ def analyze_expression(latex_expr):
                     return {"error": "Expected exactly one parameter for the curve."}
             except Exception as e:
                 return {"error": f"Failed to parse parts: {str(e)}"}
-            print(f"Integrand: {integrand}, Parameter: {param}, Curve: {dir_expr}, Bounds: [{a}, {b}]")
+            
             return{
                 "type" : "scalar_line_integral",
                 "field" : str(integrand),
@@ -142,20 +142,27 @@ def analyze_expression(latex_expr):
             }
             
         elif "htmlClass{vector_line_integral}" in latex_expr:
+
             match = re.search(r'\\htmlClass\{vector_line_integral\}\{(.+)\}', latex_expr)
             content = match.group(1)
-            parts = content.split(",", maxsplit=2)
-            parts1 = parts[0] + ',' + parts[1]
-            if len(parts) != 3:
+            parts = content.split(",", maxsplit=4)
+            if len(parts) != 5:
                 return {"error": "Could not split into function and direction"}
+            
+            integral_raw = parts[0] + ',' + parts[1] + ',' + parts[2] + ',' + parts[3]
+            if "\\cdot" in integral_raw:
+                integrand_vec, rest = integral_raw.split("\\cdot")
+                cleaned_integral = integrand_vec.strip() + "\\, dt"
             try:
-                func_expr = latex2sympy(parts1.strip())
-                integrand = func_expr.function
-                a = func_expr.limits[0][1]  # Lower limit
-                b = func_expr.limits[0][2]  # Upper limit
+                vec_expr = latex2sympy(cleaned_integral.strip())
+                print(f"Parsed vector expression: {vec_expr}")
+                integrand = vec_expr.function
+                a = vec_expr.limits[0][1]  # Lower limit
+                b = vec_expr.limits[0][2]  # Upper limit
                 parts2 = parts[2].strip().split("=")
                 if len(parts2) != 2:
                     return {"error": "Could not split into parameter and curve"}
+                
                 dir_expr = latex2sympy(parts2[1].strip())
                 param = dir_expr.free_symbols
                 param = [str(p) for p in param]
@@ -163,30 +170,16 @@ def analyze_expression(latex_expr):
                     return {"error": "Expected exactly one parameter for the curve."}
             except Exception as e:
                 return {"error": f"Failed to parse parts: {str(e)}"}
-            print(f"Integrand: {integrand}, Parameter: {param}, Curve: {dir_expr}, Bounds: [{a}, {b}]")
+            
             return{
-                "type" : "scalar_line_integral",
-                "field" : str(integrand),
+                "type" : "vector_line_integral",
+                "field" : integrand,
                 "param"  : param[0],
                 "curve"  : [str(d) for d in dir_expr],
                 "bounds": [a, b] 
             }
             
         parsed = latex2sympy(latex_expr)
-        # Check for Partial Derivative
-        if isinstance(parsed, Derivative):
-            base_expr = parsed.expr
-            vars_orders = parsed.variable_count
-            variables = [str(v[0]) for v in vars_orders]
-            orders = [v[1] for v in vars_orders]
-
-            return {
-                "type": "partial_derivative",
-                "expression": str(base_expr),
-                "variables": variables,
-                "orders": orders
-            }
-
         # Check for Integral
         if isinstance(parsed, Integral):
             integrand = parsed.function
