@@ -25,11 +25,15 @@
       <button data-op="partial_derivative">∂ Partial Derivative</button>
       <button data-op="gradient">∇ Gradient</button>
       <button data-op="double_integral">∬ Double Integral</button>
+      <button data-op="double_integral_polar">∬ Double Integral (Polar)</button>
       <button data-op="triple_integral">∭ Triple Integral</button>
+      <button data-op="triple_integral_polar">∭ Triple Integral (Polar)</button>
+      <button data-op="triple_integral_cylindrical">∭ Triple Integral (Cylindrical)</button>
       <button data-op="arc_length">Arc Length</button>
       <button data-op="divergence">∇· Divergence</button>
       <button data-op="curl">∇× Curl</button>
-      <button data-op="line_integral">∮ Line Integral</button>
+      <button data-op="scalar_line_integral">∫ Line Integral (Scalar)</button>
+      <button data-op="vector_line_integral">∮ Line Integral (Vector)</button>
       <button data-op="surface_integral">∯ Surface Integral</button>
       <button data-op="directional_derivative">→ Directional Derivative</button>
       <button data-op="greens_theorem">Green's Theorem</button>
@@ -38,13 +42,18 @@
     </div>
 
     <label for="mathfield">Expression</label>
-    <math-field id="mathfield" virtual-keyboard-mode="manual" style="width: 100%;"></math-field>
+    <math-field id="mathfield" virtual-keyboard-mode="manual" style="width: 150%;"></math-field>
+
+    <div id="additional-params" style="display: none;">
+      <label for="mathfield_additional">Additional Parameters (if any): </label>
+      <math-field id="mathfield_additional" virtual-keyboard-mode="manual" style="width: 100%;"></math-field>
+    </div>
 
     <button id="calculate">Calculate</button>
   </div>
 
   <h3>Result:</h3>
-  <pre id="result"></pre>
+  <pre id="result" style="width: 100%"></pre>
 
   <script src="popup.js"></script>
 </body>

@@ -1,4 +1,6 @@
-from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral
+from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, expand
+from sympy.abc import r, theta, _clash1
+
 def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
 
     try:
@@ -57,18 +59,39 @@ def solve_gradient(expr: str, variables: list) -> str:
 
 def solve_multiple_integral(expr: str, limits: list) -> str:
     try:
-        expression = sympify(expr)
+        local_dict = _clash1.copy()
+        for var, _, _ in limits:
+            local_dict[var] = symbols(var)
 
-        for var, a, b in reversed(limits):
-            var_sym = symbols(var)
-            a_sym = sympify(a)
-            b_sym = sympify(b)
-            expression = integrate(expression, (var_sym, a_sym, b_sym)).doit()
+        expression = sympify(expr, locals=local_dict)
+        # Apply integrals in order: outer to inner
+        print(limits)
+        for var, a, b in limits:
+            var_sym = local_dict[var]
+            a_sym = sympify(a, locals=local_dict)
+            b_sym = sympify(b, locals=local_dict)
+            expression = integrate(expression, (var_sym, a_sym, b_sym))
+        return str(expression.doit().simplify())
+    except Exception as e:
+        return f"Error: {str(e)}"     
 
-        return str(expression)
+def solve_polar_integral(expr: str, limits: list) -> str:
+    try:
+        local_dict = _clash1.copy()
+        for var, _, _ in limits:
+            local_dict[var] = symbols(var)
+        
+        expression = sympify(expr, locals=local_dict)
+
+        for var, a, b in limits:
+            var_sym = local_dict[var]
+            lower = sympify(a, locals=local_dict)
+            upper = sympify(b, locals=local_dict)
+            expression = integrate(expression, (var_sym, lower, upper))
+
+        return str(expression.doit().simplify())
     except Exception as e:
         return f"Error: {str(e)}"
-    
 # Divergence
 def solve_divergence(vector_field: list, variables: list) -> str:
     try:
@@ -98,12 +121,10 @@ def solve_curl(vector_field: list[str], variables: list[str]) -> list[str]:
         return [f"Error: {str(e)}"]
 
 # Line integral 
-from sympy import symbols, Matrix, sympify, sqrt, integrate
-
-def solve_line_integral(field, param: str, curve: list, param_bounds: list = [0, 1]) -> str:
+def solve_line_integral(field, param: str, curve: list, bounds: list = [0, 1]) -> str:
     try:
-        t = symbols(param)
-        a, b = param_bounds
+        t = sympify(param)
+        a, b = bounds
         r = Matrix([sympify(f) for f in curve])
         dr = r.diff(t)
         subs_map = {symbols(var): r[i] for i, var in enumerate('xyz'[:len(r)])}
@@ -114,6 +135,7 @@ def solve_line_integral(field, param: str, curve: list, param_bounds: list = [0,
             f = sympify(field).subs(subs_map)
             magnitude = sqrt(sum(comp**2 for comp in dr))
             integrand = f * magnitude
+            
         elif isinstance(field, (list, Matrix)):
             # Vector field: ∫ F · dr
             F = Matrix([sympify(f) for f in field])
@@ -127,7 +149,6 @@ def solve_line_integral(field, param: str, curve: list, param_bounds: list = [0,
 
     except Exception as e:
         return f"Error: {str(e)}"
-
 
 # Surface integral 
 def solve_surface_integral(field, params, surface, bounds):
@@ -244,10 +265,11 @@ def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr
             if all(v.is_real for v in s.values()):
                 f_val = f.subs(s)
                 s_eval = {str(k): str(v) for k, v in s.items()}
-                s_eval["f_value"] = f_val
+                s_eval["f_value"] = str(f_val)
                 real_solutions.append(s_eval)
-            return real_solutions
-        else:
-            return {"solutions": [], "message": "No real solutions found."}
+         
+        if not real_solutions:
+            return {"error": "No real solutions found."}       
+        return real_solutions
     except Exception as e:
         return {"error": str(e)}

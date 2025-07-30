@@ -75,8 +75,103 @@ def analyze_expression(latex_expr):
                 "type" : "gradient",
                 "expression" : str(func_expr),
                 "variables"  : [str(v) for v in vars],
-            }           
-        
+            }
+        elif "\\htmlClass{lagrange}" in latex_expr:
+            match = re.search(r'\\htmlClass\{lagrange\}\{(.+)\}', latex_expr)
+            content = match.group(1)
+            content = content.replace("\\nabla", "").strip()
+            content = content.replace("\\lambda", "").strip()
+            try:
+                grad_eqn, constraint_eqn = content.split(',')
+            except ValueError:
+                return {"error": "Expected two comma-separated expressions."}
+            parts = grad_eqn.split("=")
+            parts2 =  constraint_eqn.split("=")
+            
+            
+            if len(parts) != 2:
+                return {"error": "Could not split into function and constraint"}
+            if len(parts2) != 2:
+                return {"error": "Could not split into constraint and value"}
+            
+            
+            try:
+                func_expr = latex2sympy(parts[0].strip())
+                constraint_expr_right = latex2sympy(parts[1].strip())
+                constraint_expr_left = latex2sympy(parts2[0].strip())
+            except Exception as e:
+                return {"error": f"Failed to parse parts: {str(e)}"}
+            if constraint_expr_left != constraint_expr_right:
+                return {"error": "Constraint expressions do not match."}
+            vars = list(func_expr.free_symbols)
+            return{
+                "type" : "lagrange_multipliers",
+                "function" : str(func_expr),
+                "constraint" : str(constraint_expr_right),
+                "variables"  : [str(v) for v in vars],
+            }
+        elif "htmlClass{scalar_line_integral}" in latex_expr:
+            match = re.search(r'\\htmlClass\{scalar_line_integral\}\{(.+)\}', latex_expr)
+            content = match.group(1)
+            parts = content.split(",", maxsplit=2)
+            parts1 = parts[0] + ',' + parts[1]
+            if len(parts) != 3:
+                return {"error": "Could not split into function and direction"}
+            try:
+                func_expr = latex2sympy(parts1.strip())
+                integrand = func_expr.function
+                a = func_expr.limits[0][1]  # Lower limit
+                b = func_expr.limits[0][2]  # Upper limit
+                parts2 = parts[2].strip().split("=")
+                if len(parts2) != 2:
+                    return {"error": "Could not split into parameter and curve"}
+                dir_expr = latex2sympy(parts2[1].strip())
+                param = dir_expr.free_symbols
+                param = [str(p) for p in param]
+                if len(param) != 1:
+                    return {"error": "Expected exactly one parameter for the curve."}
+            except Exception as e:
+                return {"error": f"Failed to parse parts: {str(e)}"}
+            print(f"Integrand: {integrand}, Parameter: {param}, Curve: {dir_expr}, Bounds: [{a}, {b}]")
+            return{
+                "type" : "scalar_line_integral",
+                "field" : str(integrand),
+                "param"  : param[0],
+                "curve"  : [str(d) for d in dir_expr],
+                "bounds": [a, b] 
+            }
+            
+        elif "htmlClass{vector_line_integral}" in latex_expr:
+            match = re.search(r'\\htmlClass\{vector_line_integral\}\{(.+)\}', latex_expr)
+            content = match.group(1)
+            parts = content.split(",", maxsplit=2)
+            parts1 = parts[0] + ',' + parts[1]
+            if len(parts) != 3:
+                return {"error": "Could not split into function and direction"}
+            try:
+                func_expr = latex2sympy(parts1.strip())
+                integrand = func_expr.function
+                a = func_expr.limits[0][1]  # Lower limit
+                b = func_expr.limits[0][2]  # Upper limit
+                parts2 = parts[2].strip().split("=")
+                if len(parts2) != 2:
+                    return {"error": "Could not split into parameter and curve"}
+                dir_expr = latex2sympy(parts2[1].strip())
+                param = dir_expr.free_symbols
+                param = [str(p) for p in param]
+                if len(param) != 1:
+                    return {"error": "Expected exactly one parameter for the curve."}
+            except Exception as e:
+                return {"error": f"Failed to parse parts: {str(e)}"}
+            print(f"Integrand: {integrand}, Parameter: {param}, Curve: {dir_expr}, Bounds: [{a}, {b}]")
+            return{
+                "type" : "scalar_line_integral",
+                "field" : str(integrand),
+                "param"  : param[0],
+                "curve"  : [str(d) for d in dir_expr],
+                "bounds": [a, b] 
+            }
+            
         parsed = latex2sympy(latex_expr)
         # Check for Partial Derivative
         if isinstance(parsed, Derivative):

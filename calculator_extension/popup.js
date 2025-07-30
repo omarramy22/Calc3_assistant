@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const courseSelect = document.getElementById("course");
   const operationSection = document.getElementById("operation-section");
   const mathField = document.getElementById("mathfield");
+  const Additional_mathField = document.getElementById("mathfield_additional");
   const result = document.getElementById("result");
 
   // LaTeX templates for each operation
@@ -9,16 +10,20 @@ document.addEventListener("DOMContentLoaded", function () {
     partial_derivative: '\\frac{\\partial}{\\partial x} f(x, y)',
     arc_length: '\\htmlClass{arc}{\\int_{0}^{1} \\sqrt{\\left(\\frac{d}{dt}x(t)\\right)^2 + \\left(\\frac{d}{dt}y(t)\\right)^2 + \\left(\\frac{d}{dt}z(t)\\right)^2} \\, dt}',
     gradient: '\\htmlClass{gradient}{\\nabla f(x, y, z)}',
-    double_integral: '\\int_{0}^{1} \\int_{0}^{1} () \\, dy\\, dx',
-    triple_integral: '\\int_{0}^{1} \\int_{0}^{1} \\int_{0}^{1} () \\, dz\\, dy\\, dx',
+    double_integral: '\\int_{0}^{1} \\int_{0}^{1}  ( f(x, y) )  \\, dy\\, dx',
+    double_integral_polar:'\\int_{0}^{2\\pi} \\int_{0}^{1} ( r * f(r, \\theta) ) \\, dr\\, d\\theta',
+    triple_integral: '\\int_{0}^{1} \\int_{0}^{1} \\int_{0}^{1} ( f(x, y, z) ) \\, dz\\, dy\\, dx',
+    triple_integral_polar: '\\int_{0}^{\\pi} \\int_{0}^{1} \\int_{0}^{1} ( r * f(r, \\theta, z) ) \\, dz\\, dr \\, d\\theta',
+    triple_integral_cylindrical: '\\int_{0}^{\\pi} \\int_{0}^{\\pi} \\int_{0}^{1} ( \\rho^2 * \\sin(\\phi) * f(\\rho, \\theta, \\phi) ) \\, d\\rho\\, d\\theta\\, d\\phi',
     divergence: '\\nabla \\cdot \\vec{F}(x, y, z)',
     curl: '\\nabla \\times \\vec{F}(x, y, z)',
-    line_integral: '\\oint_C \\vec{F} \\cdot d\\vec{r}',
+    scalar_line_integral: '\\htmlClass{scalar_line_integral}{\\int_{0}^{1} ( f(x, y, z) ) \\, ds,\\vec{r}(t) = [t, t, t]}',
+    vector_line_integral: '\\htmlClass{vector_line_integral}{\\int_{0}^{1} (\\vec{F}(x, y, z)) \\cdot \\frac{d\\vec{r}}{dt} \\, dt,\\vec{r}(t) = [t, t, t]}',
     surface_integral: '\\iint_S \\vec{F} \\cdot d\\vec{S}',
     directional_derivative: '\\htmlClass{directional}{\\nabla f(x, y, z) \\cdot (r_x, r_y, r_z)}',
     greens_theorem: '\\oint_C \\vec{F} \\cdot d\\vec{r} = \\iint_R \\left(\\frac{\\partial Q}{\\partial x} - \\frac{\\partial P}{\\partial y}\\right)\\,dx\\,dy',
     stokes_theorem: '\\iint_S \\nabla \\times \\vec{F} \\cdot d\\vec{S} = \\oint_C \\vec{F} \\cdot d\\vec{r}',
-    lagrange_multipliers: '\\nabla f(x, y) = \\lambda \\nabla g(x, y)',
+    lagrange_multipliers: '\\htmlClass{lagrange}{\\nabla f(x, y, z) = \\lambda \\nabla g(x, y, z), g(x, y, z) = k}',
   };
   
 
@@ -88,12 +93,24 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
 
       if (response.ok) {
-        result.textContent = data.result || "No result returned.";
-      } else {
+        if (Array.isArray(data.result)) {
+          result.innerHTML = data.result
+            .map(
+              (sol, idx) =>
+                `Solution ${idx + 1}: x = ${sol.x}, y = ${sol.y}, λ = ${sol.λ}, f_max/min = ${sol.f_value}`
+            )
+            .join("<br>");
+        } else if (typeof data.result === "object") {
+          result.textContent = JSON.stringify(data.result, null, 2);
+        } else {
+          result.textContent = data.result || "No result returned.";
+        }
+      }
+      else {
         result.textContent = data.error || "An error occurred.";
       }
     } catch (err) {
-      result.textContent = "Failed to connect to backend.";
+      result.textContent = "Failed to connect to backend, check the input and try again.";
       console.error(err);
     }
   });

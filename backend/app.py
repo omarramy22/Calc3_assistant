@@ -14,7 +14,8 @@ from calc3 import (
     solve_directional_derivative,
     solve_greens_theorem,
     solve_stokes_theorem,
-    solve_lagrange_multipliers
+    solve_lagrange_multipliers,
+    solve_polar_integral
 )
 
 app = Flask(__name__)
@@ -70,6 +71,17 @@ def solve():
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+    elif result["type"] == "lagrange_multipliers":
+        try:
+            return jsonify({
+                "result": solve_lagrange_multipliers(
+                    result["function"],
+                    result["constraint"],
+                    result["variables"]
+                )
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     elif result["type"] == "multiple_integral":
         try:
             return jsonify({
@@ -80,7 +92,18 @@ def solve():
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-
+    elif result["type"] == "scalar_line_integral":
+        try:
+            return jsonify({
+                "result": solve_line_integral(
+                    result["field"],
+                    result["param"],
+                    result["curve"],
+                    result["bounds"]
+                )
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     elif result["type"] == "raw_expression":
         return jsonify({"result": "Unrecognized symbolic operation"})
 
