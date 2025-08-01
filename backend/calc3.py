@@ -3,16 +3,21 @@ from sympy.abc import _clash1
 from parser import parse_single_expression
 
 def safe_sympify(expr_str):
-    """Safely parse expressions using our latex2sympy parser first, then sympify as fallback"""
+    """Safely parse expressions with simple conversion"""
     if isinstance(expr_str, str):
-        # Try our latex2sympy parser first
         try:
-            parsed = parse_single_expression(expr_str)
-            return sympify(parsed)
+            # Simple conversion: replace ^ with ** for powers
+            expr_clean = expr_str.replace('^', '**')
+            return sympify(expr_clean)
         except Exception as e:
-            print(f"Parser failed for '{expr_str}': {e}, trying direct sympify")
-            # Fallback to direct sympify
-            return sympify(expr_str)
+            print(f"Direct sympify failed for '{expr_str}': {e}")
+            # Try the parser as fallback
+            try:
+                parsed = parse_single_expression(expr_str)
+                return sympify(parsed)
+            except Exception as e2:
+                print(f"Parser also failed for '{expr_str}': {e2}")
+                return sympify(expr_str)  # Last resort
     else:
         # If it's already a SymPy object, return as-is
         return expr_str
@@ -221,27 +226,6 @@ def solve_multiple_integral(expr: str, limits: list) -> str:
     except Exception as e:
         return f"Error: {str(e)}"     
 
-def solve_polar_integral(expr: str, limits: list) -> str:
-    try:
-        local_dict = _clash1.copy()
-        for var, _, _ in limits:
-            local_dict[var] = symbols(var)
-        
-        expression = safe_sympify(expr)
-
-        for var, a, b in limits:
-            var_sym = local_dict[var]
-            lower = safe_sympify(a)
-            upper = safe_sympify(b)
-            expression = integrate(expression, (var_sym, lower, upper))
-
-        result = expression.doit().simplify()
-        
-        # Use the new cleaning function
-        return clean_trig_result(result)
-            
-    except Exception as e:
-        return f"Error: {str(e)}"
 # Divergence
 def solve_divergence(vector_field: list, variables: list) -> str:
     try:
