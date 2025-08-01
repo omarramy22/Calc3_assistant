@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (operation === 'double_integral_polar') {
           integralButton = {
             symbol: '∬ Generate Polar Double Integral',
-            latex: '\\int_{0}^{2\\pi} \\int_{0}^{1} ( r \\cdot f(r, \\theta) ) \\, dr\\, d\\theta'
+            latex: '\\int_{0}^{2\\pi} \\int_{0}^{1} ( r * f(r, \\theta) ) \\, dr\\, d\\theta'
           };
         } else if (operation === 'triple_integral') {
           integralButton = {

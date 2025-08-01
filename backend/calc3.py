@@ -1,23 +1,36 @@
 from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, simplify, trigsimp
 from sympy.abc import _clash1
-from parser import parse_single_expression
+from parser import parse_single_expression, parse_latex_expression
 
 def safe_sympify(expr_str):
-    """Safely parse expressions with simple conversion"""
+    """Safely parse expressions with LaTeX support"""
     if isinstance(expr_str, str):
         try:
-            # Simple conversion: replace ^ with ** for powers
+            # First try direct sympify with basic conversion
             expr_clean = expr_str.replace('^', '**')
             return sympify(expr_clean)
         except Exception as e:
             print(f"Direct sympify failed for '{expr_str}': {e}")
-            # Try the parser as fallback
+            # Try LaTeX parser if the expression contains LaTeX commands
             try:
-                parsed = parse_single_expression(expr_str)
-                return sympify(parsed)
+                if '\\' in expr_str:  # Contains LaTeX commands
+                    parsed = parse_latex_expression(expr_str)
+                    print(f"LaTeX parsing: '{expr_str}' -> '{parsed}'")
+                else:
+                    parsed = parse_single_expression(expr_str)
+                    print(f"Simple parsing: '{expr_str}' -> '{parsed}'")
+                
+                # Make sure the parsed result is valid before sympifying
+                if parsed and parsed.strip():
+                    return sympify(parsed)
+                else:
+                    raise ValueError(f"Parser returned empty result for '{expr_str}'")
+                    
             except Exception as e2:
                 print(f"Parser also failed for '{expr_str}': {e2}")
-                return sympify(expr_str)  # Last resort
+                # Instead of trying sympify again with the original string,
+                # return a symbol with a safe name or raise the error
+                raise ValueError(f"Could not parse expression: {expr_str}")
     else:
         # If it's already a SymPy object, return as-is
         return expr_str
@@ -207,23 +220,65 @@ def solve_gradient(expr: str, variables: list) -> str:
 
 def solve_multiple_integral(expr: str, limits: list) -> str:
     try:
-        local_dict = _clash1.copy()
+        print(f"DEBUG solve_multiple_integral: expr='{expr}', limits={limits}")
+        
+        # Create symbols for all variables first
+        all_vars = {}
         for var, _, _ in limits:
-            local_dict[var] = symbols(var)
-
-        expression = safe_sympify(expr)
+            all_vars[var] = symbols(var)
+        
+        print(f"DEBUG solve_multiple_integral: created symbols={all_vars}")
+        
+        # Special handling for common patterns like 'xy' -> 'x*y'
+        expr_processed = expr
+        if expr == 'xy' and 'x' in all_vars and 'y' in all_vars:
+            expr_processed = 'x*y'
+            print(f"DEBUG solve_multiple_integral: converted 'xy' to 'x*y'")
+        elif expr == 'xyz' and 'x' in all_vars and 'y' in all_vars and 'z' in all_vars:
+            expr_processed = 'x*y*z'
+            print(f"DEBUG solve_multiple_integral: converted 'xyz' to 'x*y*z'")
+        
+        # Parse the expression with the correct symbols
+        expression = sympify(expr_processed, locals=all_vars)
+        print(f"DEBUG solve_multiple_integral: sympified expression={expression}")
+        print(f"DEBUG solve_multiple_integral: expression free symbols={expression.free_symbols}")
+        print(f"DEBUG solve_multiple_integral: expression type: {type(expression)}")
+        
         # Apply integrals in order: outer to inner
-        for var, a, b in limits:
-            var_sym = local_dict[var]
-            a_sym = safe_sympify(a)
-            b_sym = safe_sympify(b)
-            expression = integrate(expression, (var_sym, a_sym, b_sym))
+        for i, (var, a, b) in enumerate(limits):
+            var_sym = all_vars[var]
+            a_sym = sympify(a, locals=all_vars)
+            b_sym = sympify(b, locals=all_vars)
+            
+            print(f"DEBUG solve_multiple_integral: Integrating step {i+1}: ∫({expression}) d{var_sym} from {a_sym} to {b_sym}")
+            print(f"DEBUG solve_multiple_integral: Before integration - expression type: {type(expression)}")
+            print(f"DEBUG solve_multiple_integral: Before integration - var_sym type: {type(var_sym)}")
+            
+            # Perform the integration
+            integrated = integrate(expression, (var_sym, a_sym, b_sym))
+            print(f"DEBUG solve_multiple_integral: Raw integration result: {integrated}")
+            
+            # Force evaluation if it's still an Integral object
+            if hasattr(integrated, 'doit'):
+                expression = integrated.doit()
+                print(f"DEBUG solve_multiple_integral: After doit(): {expression}")
+            else:
+                expression = integrated
+            
+            print(f"DEBUG solve_multiple_integral: Result after step {i+1}: {expression}")
         
-        result = expression.doit().simplify()
+        # Final simplification
+        result = expression.simplify()
+        print(f"DEBUG solve_multiple_integral: Final result after simplify(): {result}")
         
-        # Use the new cleaning function
-        return clean_trig_result(result)
+        final_str = str(result)
+        print(f"DEBUG solve_multiple_integral: Final string result: '{final_str}'")
+        return final_str
+        
     except Exception as e:
+        print(f"DEBUG solve_multiple_integral: ERROR: {e}")
+        import traceback
+        traceback.print_exc()
         return f"Error: {str(e)}"     
 
 # Divergence

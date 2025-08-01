@@ -28,36 +28,46 @@ from parser import (
     analyze_expression,
     parse_vector_input,
     parse_parametric_functions,
-    parse_single_expression
+    parse_single_expression,
+    parse_latex_expression,
+    parse_latex_integral,
+    parse_latex_integral_with_limits
 )
 
 app = Flask(__name__)
 CORS(app)
 
 def safe_sympify(expr_str):
-    """Safely convert string to SymPy expression with proper parsing"""
+    """Safely convert string to SymPy expression with proper LaTeX parsing"""
     if not expr_str or expr_str.strip() == '':
         return None
     
     try:
-        # First try direct sympify
-        return sympify(expr_str)
-    except:
+        # First try direct sympify with basic conversion
+        expr_clean = expr_str.replace('^', '**')
+        return sympify(expr_clean)
+    except Exception as e:
+        print(f"Direct sympify failed for '{expr_str}': {e}")
+        # Try LaTeX parser if the expression contains LaTeX commands
         try:
-            # Try latex2sympy if available and if the string looks like LaTeX
-            if latex2sympy and ('\\' in expr_str or '{' in expr_str):
-                return latex2sympy(expr_str)
-        except:
-            pass
-        
-        try:
-            # Try parsing as LaTeX using SymPy's parser
-            return parse_latex(expr_str)
-        except:
-            # If all fail, try some common replacements
-            expr_str = expr_str.replace('^', '**')  # Convert ^ to **
-            expr_str = expr_str.replace('π', 'pi')   # Convert π to pi
-            return sympify(expr_str)
+            if '\\' in expr_str:  # Contains LaTeX commands
+                parsed = parse_latex_expression(expr_str)
+                print(f"LaTeX parsing: '{expr_str}' -> '{parsed}'")
+            else:
+                parsed = parse_single_expression(expr_str)
+                print(f"Simple parsing: '{expr_str}' -> '{parsed}'")
+            
+            # Make sure the parsed result is valid before sympifying
+            if parsed and parsed.strip():
+                return sympify(parsed)
+            else:
+                raise ValueError(f"Parser returned empty result for '{expr_str}'")
+                
+        except Exception as e2:
+            print(f"Parser also failed for '{expr_str}': {e2}")
+            # Instead of trying sympify again with the original string,
+            # return a symbol with a safe name or raise the error
+            raise ValueError(f"Could not parse expression: {expr_str}")
 
 def parse_limits(limits_str):
     """Parse limits in user-friendly formats like '0, 1' or '0to1' or '0 to 1'"""
@@ -99,8 +109,86 @@ def parse_parameter_limits(limits_str):
     """Parse parameter limits for compatibility"""
     return parse_limits(limits_str)
 
+def convert_latex_to_expression(latex_expr):
+    """Convert LaTeX expression to a standard mathematical expression using latex2sympy"""
+    if not latex_expr or not latex_expr.strip():
+        return ""
+    
+    # Clean the expression
+    clean_expr = latex_expr.strip()
+    if clean_expr.startswith('$$') and clean_expr.endswith('$$'):
+        clean_expr = clean_expr[2:-2].strip()
+    elif clean_expr.startswith('$') and clean_expr.endswith('$'):
+        clean_expr = clean_expr[1:-1].strip()
+    
+    print(f"DEBUG: Input LaTeX: '{latex_expr}'")
+    print(f"DEBUG: Cleaned LaTeX: '{clean_expr}'")
+    
+    # For integral expressions, we need to extract just the integrand
+    if '\\int' in clean_expr:
+        # Use regex to extract the integrand from LaTeX integral
+        import re
+        
+        # Handle common patterns: \int_a^b\int_c^d f(x,y) dx dy
+        # Look for content after integral symbols but before dx, dy, dz
+        
+        # Remove integral symbols and limits first
+        temp_expr = re.sub(r'\\int[_\^{}\d\w\s]*', '', clean_expr)
+        print(f"DEBUG: After removing \\int: '{temp_expr}'")
+        
+        # Remove differential elements (dx, dy, dz, etc.)
+        temp_expr = re.sub(r'\\,?d[xyz]', '', temp_expr)
+        print(f"DEBUG: After removing dx,dy,dz: '{temp_expr}'")
+        
+        # Handle \cdot and other LaTeX symbols
+        temp_expr = temp_expr.replace('\\cdot', '*')
+        temp_expr = temp_expr.replace('\\,', '')
+        
+        # Remove parentheses if they wrap the entire expression
+        temp_expr = temp_expr.strip()
+        if temp_expr.startswith('(') and temp_expr.endswith(')'):
+            temp_expr = temp_expr[1:-1]
+        
+        print(f"DEBUG: Final integrand extracted: '{temp_expr}'")
+        
+        # Now convert the integrand using latex2sympy if available
+        try:
+            if latex2sympy and temp_expr.strip():
+                sympy_expr = latex2sympy(temp_expr)
+                result = str(sympy_expr)
+                print(f"DEBUG: latex2sympy converted integrand '{temp_expr}' to '{result}'")
+                return result
+            else:
+                return temp_expr.strip() if temp_expr.strip() else "x*y"
+        except Exception as e:
+            print(f"DEBUG: latex2sympy failed on integrand: {e}")
+            return temp_expr.strip() if temp_expr.strip() else "x*y"
+    
+    # For non-integral expressions, use latex2sympy directly
+    try:
+        if latex2sympy:
+            # Handle \cdot before passing to latex2sympy
+            clean_expr = clean_expr.replace('\\cdot', '*')
+            
+            sympy_expr = latex2sympy(clean_expr)
+            result = str(sympy_expr)
+            print(f"DEBUG: latex2sympy converted '{clean_expr}' to '{result}'")
+            
+            # Clean up common LaTeX residue
+            result = result.replace('\\right', '').replace('\\left', '')
+            result = result.replace('\\,', '').replace('\\', '')
+            result = result.strip()
+            
+            print(f"DEBUG: After cleanup: '{result}'")
+            return result
+    except Exception as e:
+        print(f"DEBUG: latex2sympy failed: {e}")
+    
+    # Fallback to manual extraction
+    return extract_integrand_from_latex(latex_expr)
+
 def extract_integrand_from_latex(latex_expr):
-    """Extract the integrand from LaTeX integral expressions"""
+    """Extract the integrand from LaTeX integral expressions using latex2sympy"""
     if not latex_expr:
         return ""
     
@@ -111,23 +199,30 @@ def extract_integrand_from_latex(latex_expr):
     elif expr.startswith('$') and expr.endswith('$'):
         expr = expr[1:-1].strip()
     
-    # Look for patterns like \int_a^b\int_c^d(expression)
-    import re
-    
-    # Pattern to match integrals and extract the integrand
-    # This looks for content in parentheses after integral symbols
-    integrand_match = re.search(r'\([^)]+\)', expr)
-    if integrand_match:
-        integrand = integrand_match.group(0)[1:-1]  # Remove parentheses
-        return integrand.strip()
-    
-    # If no parentheses, try to extract expression after integral symbols
-    # Remove integral symbols and limits
-    expr = re.sub(r'\\int[_^{}\d\w\s]*', '', expr)
-    expr = re.sub(r'\\,d[xyz]', '', expr)  # Remove dx, dy, dz
-    expr = expr.strip()
-    
-    return expr if expr else "x*y"  # Default fallback
+    # Use latex2sympy to convert the entire LaTeX expression
+    try:
+        if latex2sympy:
+            # Convert the LaTeX to SymPy expression
+            sympy_expr = latex2sympy(expr)
+            print(f"DEBUG: latex2sympy converted '{expr}' to '{sympy_expr}'")
+            return str(sympy_expr)
+        else:
+            # Fallback if latex2sympy not available
+            import re
+            integrand_match = re.search(r'\([^)]+\)', expr)
+            if integrand_match:
+                integrand = integrand_match.group(0)[1:-1]
+                return integrand.strip()
+            return "x*y"
+    except Exception as e:
+        print(f"DEBUG: latex2sympy failed with error: {e}")
+        # Fallback to manual parsing
+        import re
+        integrand_match = re.search(r'\([^)]+\)', expr)
+        if integrand_match:
+            integrand = integrand_match.group(0)[1:-1]
+            return integrand.strip()
+        return "x*y"
 
 def parse_limits_from_latex(latex_expr):
     """Extract limits from LaTeX integral expressions"""
@@ -214,49 +309,40 @@ def calculate():
             # Debug prints
             print(f"DEBUG: Received data: {data}")
             print(f"DEBUG: expression_str = '{expression_str}'")
-            print(f"DEBUG: expression_str.strip() = '{expression_str.strip()}'")
-            print(f"DEBUG: len(expression_str.strip()) = {len(expression_str.strip())}")
             
-            # Check if the expression is a LaTeX integral
+            # Check if the expression is empty
             if not expression_str.strip():
                 print("DEBUG: Expression is empty, returning error")
                 return jsonify({"error": "Expression cannot be empty"}), 400
             
-            # If it looks like a LaTeX integral, extract the integrand and limits
-            if '\\int' in expression_str:
-                print("DEBUG: LaTeX integral detected")
-                integrand = extract_integrand_from_latex(expression_str)
-                print(f"DEBUG: Extracted integrand = '{integrand}'")
+            # Use the new parser function for LaTeX or regular expressions
+            if '\\int' in expression_str or '$' in expression_str:
+                print("DEBUG: LaTeX expression detected, using parse_latex_integral_with_limits")
+                parsed_expr, latex_limits = parse_latex_integral_with_limits(expression_str)
                 
-                if not integrand:
-                    print("DEBUG: Could not extract integrand")
-                    return jsonify({"error": "Could not extract integrand from LaTeX expression"}), 400
-                
-                parsed_expr = parse_single_expression(integrand)
-                print(f"DEBUG: Parsed expression = '{parsed_expr}'")
-                
-                # Try to extract limits from LaTeX if not provided separately
-                if limits_str == "0,1,0,1":  # Default limits
-                    extracted_limits = parse_limits_from_latex(expression_str)
-                    print(f"DEBUG: Extracted limits = '{extracted_limits}'")
-                    if extracted_limits != "0,1,0,1":
-                        limits_str = extracted_limits
+                # Use LaTeX limits if they were successfully extracted and look reasonable
+                if latex_limits and len(latex_limits) >= 2:
+                    print(f"DEBUG: Using LaTeX limits: {latex_limits}")
+                    limits = latex_limits
+                else:
+                    print("DEBUG: LaTeX limits not found or incomplete, using manual limits")
+                    variables = parse_vector_input(variables_str) if variables_str else ['x', 'y']
+                    limits = parse_integral_limits(limits_str, variables)
             else:
                 print("DEBUG: Regular expression input")
-                # Regular expression input
                 parsed_expr = parse_single_expression(expression_str)
-                print(f"DEBUG: Parsed expression = '{parsed_expr}'")
+                variables = parse_vector_input(variables_str) if variables_str else ['x', 'y']
+                limits = parse_integral_limits(limits_str, variables)
             
-            # Parse variables and limits for double integral (Cartesian)
-            variables = parse_vector_input(variables_str) if variables_str else ['x', 'y']
-            limits = parse_integral_limits(limits_str, variables)
-            
-            print(f"DEBUG: Final variables = {variables}")
+            print(f"DEBUG: Final parsed expression = '{parsed_expr}'")
             print(f"DEBUG: Final limits = {limits}")
-            print(f"DEBUG: About to call solve_multiple_integral with: expr='{parsed_expr}', limits={limits}")
+            print(f"DEBUG: About to call solve_multiple_integral('{parsed_expr}', {limits})")
+            
+            result = solve_multiple_integral(parsed_expr, limits)
+            print(f"DEBUG: solve_multiple_integral returned: '{result}'")
             
             return jsonify({
-                "result": solve_multiple_integral(parsed_expr, limits)
+                "result": result
             })
             
         elif operation == "double_integral_polar":
@@ -264,28 +350,15 @@ def calculate():
             variables_str = data.get("variables", "r,theta")
             limits_str = data.get("limits", "0,1,0,2*pi")
             
-            # Check if the expression is a LaTeX integral
             if not expression_str.strip():
                 return jsonify({"error": "Expression cannot be empty"}), 400
             
-            # If it looks like a LaTeX integral, extract the integrand and limits
-            if '\\int' in expression_str:
-                integrand = extract_integrand_from_latex(expression_str)
-                if not integrand:
-                    return jsonify({"error": "Could not extract integrand from LaTeX expression"}), 400
-                
-                parsed_expr = parse_single_expression(integrand)
-                
-                # Try to extract limits from LaTeX if not provided separately
-                if limits_str == "0,1,0,2*pi":  # Default limits
-                    extracted_limits = parse_limits_from_latex(expression_str)
-                    if extracted_limits != "0,1,0,1":
-                        limits_str = extracted_limits
+            # Use the new parser function for LaTeX or regular expressions
+            if '\\int' in expression_str or '$' in expression_str:
+                parsed_expr = parse_latex_integral(expression_str)
             else:
-                # Regular expression input
                 parsed_expr = parse_single_expression(expression_str)
             
-            # Parse variables and limits for double integral (Polar)
             variables = parse_vector_input(variables_str) if variables_str else ['r', 'theta']
             limits = parse_integral_limits(limits_str, variables)
             
@@ -298,28 +371,15 @@ def calculate():
             variables_str = data.get("variables", "x,y,z")
             limits_str = data.get("limits", "0,1,0,1,0,1")
             
-            # Check if the expression is a LaTeX integral
             if not expression_str.strip():
                 return jsonify({"error": "Expression cannot be empty"}), 400
             
-            # If it looks like a LaTeX integral, extract the integrand and limits
-            if '\\int' in expression_str:
-                integrand = extract_integrand_from_latex(expression_str)
-                if not integrand:
-                    return jsonify({"error": "Could not extract integrand from LaTeX expression"}), 400
-                
-                parsed_expr = parse_single_expression(integrand)
-                
-                # Try to extract limits from LaTeX if not provided separately
-                if limits_str == "0,1,0,1,0,1":  # Default limits
-                    extracted_limits = parse_limits_from_latex(expression_str)
-                    if extracted_limits != "0,1,0,1":
-                        limits_str = extracted_limits
+            # Use the new parser function for LaTeX or regular expressions
+            if '\\int' in expression_str or '$' in expression_str:
+                parsed_expr = parse_latex_integral(expression_str)
             else:
-                # Regular expression input
                 parsed_expr = parse_single_expression(expression_str)
             
-            # Parse variables and limits for triple integral (Cartesian)
             variables = parse_vector_input(variables_str) if variables_str else ['x', 'y', 'z']
             limits = parse_integral_limits(limits_str, variables)
             
@@ -332,28 +392,15 @@ def calculate():
             variables_str = data.get("variables", "r,theta,z")
             limits_str = data.get("limits", "0,1,0,2*pi,0,1")
             
-            # Check if the expression is a LaTeX integral
             if not expression_str.strip():
                 return jsonify({"error": "Expression cannot be empty"}), 400
             
-            # If it looks like a LaTeX integral, extract the integrand and limits
-            if '\\int' in expression_str:
-                integrand = extract_integrand_from_latex(expression_str)
-                if not integrand:
-                    return jsonify({"error": "Could not extract integrand from LaTeX expression"}), 400
-                
-                parsed_expr = parse_single_expression(integrand)
-                
-                # Try to extract limits from LaTeX if not provided separately
-                if limits_str == "0,1,0,2*pi,0,1":  # Default limits
-                    extracted_limits = parse_limits_from_latex(expression_str)
-                    if extracted_limits != "0,1,0,1":
-                        limits_str = extracted_limits
+            # Use the new parser function for LaTeX or regular expressions
+            if '\\int' in expression_str or '$' in expression_str:
+                parsed_expr = parse_latex_integral(expression_str)
             else:
-                # Regular expression input
                 parsed_expr = parse_single_expression(expression_str)
             
-            # Parse variables and limits for triple integral (Cylindrical/Polar)
             variables = parse_vector_input(variables_str) if variables_str else ['r', 'theta', 'z']
             limits = parse_integral_limits(limits_str, variables)
             
@@ -366,28 +413,15 @@ def calculate():
             variables_str = data.get("variables", "r,theta,z")
             limits_str = data.get("limits", "0,1,0,2*pi,0,1")
             
-            # Check if the expression is a LaTeX integral
             if not expression_str.strip():
                 return jsonify({"error": "Expression cannot be empty"}), 400
             
-            # If it looks like a LaTeX integral, extract the integrand and limits
-            if '\\int' in expression_str:
-                integrand = extract_integrand_from_latex(expression_str)
-                if not integrand:
-                    return jsonify({"error": "Could not extract integrand from LaTeX expression"}), 400
-                
-                parsed_expr = parse_single_expression(integrand)
-                
-                # Try to extract limits from LaTeX if not provided separately
-                if limits_str == "0,1,0,2*pi,0,1":  # Default limits
-                    extracted_limits = parse_limits_from_latex(expression_str)
-                    if extracted_limits != "0,1,0,1":
-                        limits_str = extracted_limits
+            # Use the new parser function for LaTeX or regular expressions
+            if '\\int' in expression_str or '$' in expression_str:
+                parsed_expr = parse_latex_integral(expression_str)
             else:
-                # Regular expression input
                 parsed_expr = parse_single_expression(expression_str)
             
-            # Parse variables and limits for triple integral (Cylindrical)
             variables = parse_vector_input(variables_str) if variables_str else ['r', 'theta', 'z']
             limits = parse_integral_limits(limits_str, variables)
             
