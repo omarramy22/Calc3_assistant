@@ -20,6 +20,101 @@ label {
   font-weight: 500;
 }
 
+/* Styling for operation dropdown */
+#operation-select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border 0.2s ease;
+}
+
+#operation-select:focus {
+  border-color: #5c7cfa;
+  outline: none;
+}
+
+/* Styling for input fields container */
+#input-fields {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9ff;
+  border-radius: 8px;
+  border: 1px solid #e1e5f0;
+}
+
+.field-container {
+  margin-bottom: 15px;
+}
+
+.field-container label {
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+/* Math field styling */
+math-field {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 16px;
+  background-color: white;
+  transition: border-color 0.2s ease;
+}
+
+math-field:focus-within {
+  border-color: #5c7cfa;
+  box-shadow: 0 0 0 3px rgba(92, 124, 250, 0.1);
+}
+
+/* Placeholder styling for math fields */
+math-field[style*="color: rgb(153, 153, 153)"] {
+  font-style: italic;
+}
+
+/* Helper button styling */
+.latex-button, .limit-button {
+  padding: 3px 8px !important;
+  font-size: 12px !important;
+  margin: 2px !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.latex-button {
+  background-color: #f0f0f0 !important;
+  border: 1px solid #ccc !important;
+}
+
+.latex-button:hover {
+  background-color: #e0e0e0 !important;
+}
+
+.limit-button {
+  background-color: #e6f3ff !important;
+  border: 1px solid #b3d4fc !important;
+}
+
+.limit-button:hover {
+  background-color: #d0e7ff !important;
+}
+
+/* Integral template button styling */
+button[style*="background-color: rgb(76, 175, 80)"] {
+  transition: background-color 0.2s ease !important;
+}
+
+button[style*="background-color: rgb(76, 175, 80)"]:hover {
+  background-color: #45a049 !important;
+}
+
 select,
 input[type="text"] {
   width: 100%;

@@ -21,39 +21,33 @@
 
 <div id="operation-section" style="display: none;">
     <h3>Select Operation:</h3>
-    <div id="operation-buttons">
-      <button data-op="partial_derivative">∂ Partial Derivative</button>
-      <button data-op="gradient">∇ Gradient</button>
-      <button data-op="double_integral">∬ Double Integral</button>
-      <button data-op="double_integral_polar">∬ Double Integral (Polar)</button>
-      <button data-op="triple_integral">∭ Triple Integral</button>
-      <button data-op="triple_integral_polar">∭ Triple Integral (Polar)</button>
-      <button data-op="triple_integral_cylindrical">∭ Triple Integral (Cylindrical)</button>
-      <button data-op="arc_length">Arc Length</button>
-      <button data-op="divergence" style="display: none;">∇· Divergence </button>
-      <button data-op="curl" style="display: none;">∇× Curl</button>
-      <button data-op="scalar_line_integral">∫ Line Integral (Scalar)</button>
-      <button data-op="vector_line_integral"  style="display: none;">∮ Line Integral (Vector)</button>
-      <button data-op="surface_integral" style="display: none;">∯ Surface Integral</button>
-      <button data-op="directional_derivative">→ Directional Derivative</button>
-      <button data-op="greens_theorem"  style="display: none;">Green's Theorem</button>
-      <button data-op="stokes_theorem"  style="display: none;">Stokes' Theorem</button>
-      <button data-op="lagrange_multipliers">Lagrange Multipliers</button>
+    <label for="operation-select">Choose Operation:</label>
+    <select id="operation-select">
+      <option value="" selected disabled>-- Select an Operation --</option>
+      <option value="partial_derivative">∂ Partial Derivative</option>
+      <option value="gradient">∇ Gradient</option>
+      <option value="double_integral">∬ Double Integral</option>
+      <option value="double_integral_polar">∬ Double Integral (Polar)</option>
+      <option value="triple_integral">∭ Triple Integral</option>
+      <option value="triple_integral_polar">∭ Triple Integral (Polar)</option>
+      <option value="triple_integral_cylindrical">∭ Triple Integral (Cylindrical)</option>
+      <option value="arc_length">Arc Length</option>
+      <option value="divergence">∇· Divergence</option>
+      <option value="curl">∇× Curl</option>
+      <option value="scalar_line_integral">∫ Line Integral (Scalar)</option>
+      <option value="vector_line_integral">∮ Line Integral (Vector)</option>
+      <option value="surface_integral">∯ Surface Integral</option>
+      <option value="directional_derivative">→ Directional Derivative</option>
+      <option value="greens_theorem">Green's Theorem</option>
+      <option value="stokes_theorem">Stokes' Theorem</option>
+      <option value="lagrange_multipliers">Lagrange Multipliers</option>
+    </select>
+
+    <div id="input-fields" style="display: none; margin-top: 20px;">
+      <!-- Dynamic input fields will be inserted here -->
     </div>
-
-    <label for="mathfield">Expression</label>
-    <math-field id="mathfield" virtual-keyboard-mode="manual" style="width: 150%;"></math-field>
-
-    <div id="additional-params" style="display: none;">
-      <label for="mathfield_additional">Additional Parameters (if any): </label>
-      <math-field id="mathfield_additional" virtual-keyboard-mode="manual" style="width: 100%;"></math-field>
-    </div>
-
-    <button id="calculate">Calculate</button>
   </div>
-
-  <h3>Result:</h3>
-  <pre id="result" style="width: 100%"></pre>
+  <div id="result" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: auto; max-height: 400px;"></div>
 
   <script src="popup.js"></script>
 </body>
