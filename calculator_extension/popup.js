@@ -475,8 +475,9 @@ document.addEventListener("DOMContentLoaded", function () {
             let cleanSol = sol.toString();
             cleanSol = cleanSol
               .replace(/\*\*/g, '^')  // Convert ** to ^
-              .replace(/sqrt\(/g, '\\sqrt{')  // Convert sqrt( to \sqrt{
-              .replace(/\)/g, '}')  // Convert closing ) to }
+              .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
+              .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
+              .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
               .replace(/\$\$/g, '');  // Remove $$ delimiters if present
             
             mathResult.setValue(cleanSol);
@@ -560,8 +561,9 @@ document.addEventListener("DOMContentLoaded", function () {
           let cleanSol = sol.toString();
           cleanSol = cleanSol
             .replace(/\*\*/g, '^')  // Convert ** to ^
-            .replace(/sqrt\(/g, '\\sqrt{')  // Convert sqrt( to \sqrt{
-            .replace(/\)/g, '}')  // Convert closing ) to }
+            .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
+            .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
+            .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
             .replace(/\$\$/g, '');  // Remove $$ delimiters if present
           
           mathResult.setValue(cleanSol);
@@ -597,11 +599,12 @@ document.addEventListener("DOMContentLoaded", function () {
         // Clean up the LaTeX formatting for better display
         let cleanResult = resultData.toString() || "No result returned.";
         
-        // Convert Python-style expressions to proper LaTeX
+        // Convert Python-style expressions to proper LaTeX more carefully
         cleanResult = cleanResult
           .replace(/\*\*/g, '^')  // Convert ** to ^
-          .replace(/sqrt\(/g, '\\sqrt{')  // Convert sqrt( to \sqrt{
-          .replace(/\)/g, '}')  // Convert closing ) to }
+          .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
+          .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
+          .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
           .replace(/\$\$/g, '');  // Remove $$ delimiters if present
         
         mathResult.setValue(cleanResult);
