@@ -20,19 +20,7 @@ def parse_expression(expr):
     try:
         # Try LaTeX parsing first if it looks like LaTeX
         if '\\' in expr:
-            try:
-                return parse_latex(expr)
-            except:
-                # If parse_latex fails, do manual conversion
-                expr = expr.replace('\\sin', 'sin')
-                expr = expr.replace('\\cos', 'cos')
-                expr = expr.replace('\\tan', 'tan')
-                expr = expr.replace('\\ln', 'log')
-                expr = expr.replace('\\log', 'log')
-                expr = expr.replace('\\pi', 'pi')
-                expr = expr.replace('\\cdot', '*')
-                expr = expr.replace('^', '**')
-                return sympify(expr)
+            return parse_latex(expr)
         else:
             # Handle common patterns and use sympify
             expr = expr.replace('^', '**')  # Convert powers
@@ -63,12 +51,8 @@ def parse_integral_latex(latex_expr):
         latex_expr = latex_expr[1:-1].strip()
     
     try:
-        # Parse the LaTeX integral using SymPy's parse_latex
-        try:
-            parsed = parse_latex(latex_expr)
-        except:
-            # If parse_latex fails, return the original expression
-            return latex_expr, []
+        # Parse the LaTeX integral
+        parsed = parse_latex(latex_expr)
         
         # If it's an Integral object, extract components
         if hasattr(parsed, 'function') and hasattr(parsed, 'limits'):

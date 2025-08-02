@@ -17,7 +17,7 @@ from calc3 import (
     solve_lagrange_multipliers
 )
 
-from parser import (
+from parser_new import (
     parse_expression,
     parse_integral_latex,
     parse_vector,

@@ -1,39 +1,5 @@
 from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, simplify, trigsimp
 from sympy.abc import _clash1
-from parser import parse_single_expression, parse_latex_expression
-
-def safe_sympify(expr_str):
-    """Safely parse expressions with LaTeX support"""
-    if isinstance(expr_str, str):
-        try:
-            # First try direct sympify with basic conversion
-            expr_clean = expr_str.replace('^', '**')
-            return sympify(expr_clean)
-        except Exception as e:
-            print(f"Direct sympify failed for '{expr_str}': {e}")
-            # Try LaTeX parser if the expression contains LaTeX commands
-            try:
-                if '\\' in expr_str:  # Contains LaTeX commands
-                    parsed = parse_latex_expression(expr_str)
-                    print(f"LaTeX parsing: '{expr_str}' -> '{parsed}'")
-                else:
-                    parsed = parse_single_expression(expr_str)
-                    print(f"Simple parsing: '{expr_str}' -> '{parsed}'")
-                
-                # Make sure the parsed result is valid before sympifying
-                if parsed and parsed.strip():
-                    return sympify(parsed)
-                else:
-                    raise ValueError(f"Parser returned empty result for '{expr_str}'")
-                    
-            except Exception as e2:
-                print(f"Parser also failed for '{expr_str}': {e2}")
-                # Instead of trying sympify again with the original string,
-                # return a symbol with a safe name or raise the error
-                raise ValueError(f"Could not parse expression: {expr_str}")
-    else:
-        # If it's already a SymPy object, return as-is
-        return expr_str
 
 def clean_trig_result(result, debug=False):
     """Clean up trigonometric expressions by forcing evaluation"""
@@ -140,7 +106,7 @@ def clean_trig_result(result, debug=False):
 def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
 
     try:
-        expression = safe_sympify(expr)
+        expression = sympify(expr)
         
         if order and len(variables) < order:
             variables += [variables[-1]] * (order - len(variables))
@@ -160,10 +126,10 @@ def solve_arc_length(exprs: list, param: str, a: str, b: str) -> str:
     try:
         # Convert parameter to symbol
         t = symbols(param)
-        a = safe_sympify(a)
-        b = safe_sympify(b)
+        a = sympify(a)
+        b = sympify(b)
 
-        components = [safe_sympify(expr) for expr in exprs]
+        components = [sympify(expr) for expr in exprs]
         derivatives = [diff(comp, t) for comp in components]
         integrand = sqrt(sum(d**2 for d in derivatives))
 
@@ -201,20 +167,12 @@ def solve_arc_length(exprs: list, param: str, a: str, b: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-def solve_gradient(expr: str, variables: list) -> str:
+def solve_gradient(expr: str, variables: list) -> list[str]:
     try:
-        expression = safe_sympify(expr)
+        expression = sympify(expr)
         sym_vars = [symbols(v) for v in variables]
-        grad = [diff(expression, var) for var in sym_vars]
-
-        # Choose unit vectors dynamically
-        unit_vectors = ['i', 'j', 'k', 'l', 'm', 'n']  # add more if needed
-
-        if len(grad) > len(unit_vectors):
-            return "Error: Not enough unit vector symbols defined."
-
-        terms = [f"{grad[i]}*{unit_vectors[i]}" for i in range(len(grad))]
-        return " + ".join(terms)
+        grad = [str(diff(expression, var)) for var in sym_vars]
+        return grad
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -286,7 +244,7 @@ def solve_divergence(vector_field: list, variables: list) -> str:
     try:
         if len(vector_field) != len(variables):
             return "Error: Vector field and variable count must match."
-        components = [safe_sympify(c) for c in vector_field]
+        components = [sympify(c) for c in vector_field]
         sym_vars = [symbols(v) for v in variables]
         div = sum(diff(components[i], sym_vars[i]) for i in range(len(components)))
         return str(div)
@@ -299,7 +257,7 @@ def solve_curl(vector_field: list[str], variables: list[str]) -> list[str]:
         if len(vector_field) != 3 or len(variables) != 3:
             return ["Error: Curl is only defined for 3D vector fields."]
         x, y, z = symbols(variables)
-        F1, F2, F3 = [safe_sympify(f) for f in vector_field]
+        F1, F2, F3 = [sympify(f) for f in vector_field]
 
         curl_x = diff(F3, y) - diff(F2, z)
         curl_y = diff(F1, z) - diff(F3, x)
@@ -314,20 +272,20 @@ def solve_line_integral(field, param: str, curve: list, bounds: list = [0, 1]) -
     try:
         t = symbols(param)
         a, b = bounds
-        r = Matrix([safe_sympify(f) for f in curve])
+        r = Matrix([sympify(f) for f in curve])
         dr = r.diff(t)
         subs_map = {symbols(var): r[i] for i, var in enumerate('xyz'[:len(r)])}
 
         # Auto-detect field type
         if isinstance(field, str):
             # Scalar field: ∫ f(x, y, ...) ds
-            f = safe_sympify(field).subs(subs_map)
+            f = sympify(field).subs(subs_map)
             magnitude = sqrt(sum(comp**2 for comp in dr))
             integrand = f * magnitude
             
         elif isinstance(field, (list, Matrix)):
             # Vector field: ∫ F · dr
-            F = Matrix([safe_sympify(f) for f in field])
+            F = Matrix([sympify(f) for f in field])
             F_sub = F.subs(subs_map)
             integrand = F_sub.dot(dr)
         else:
@@ -344,7 +302,7 @@ def solve_surface_integral(field, params, surface, bounds):
     try:
         u, v = symbols(params)
         x, y, z = symbols("x y z")
-        r = Matrix([safe_sympify(expr) for expr in surface])
+        r = Matrix([sympify(expr) for expr in surface])
         ru = r.diff(u)
         rv = r.diff(v)
         normal_vector = ru.cross(rv)
@@ -355,11 +313,11 @@ def solve_surface_integral(field, params, surface, bounds):
         substitutions = {x: r[0], y: r[1], z: r[2]}
 
         if is_vector:
-            F = Matrix([safe_sympify(f) for f in field])
+            F = Matrix([sympify(f) for f in field])
             F_sub = F.subs(substitutions)
             integrand = F_sub.dot(normal_vector)
         elif is_scalar:
-            f = safe_sympify(field if isinstance(field, str) else field[0])
+            f = sympify(field if isinstance(field, str) else field[0])
             f_sub = f.subs(substitutions)
             integrand = f_sub * normal_magnitude
         else:
@@ -376,7 +334,7 @@ def solve_directional_derivative(expr: str, variables: list, direction: list) ->
     try:
         if len(direction) != len(variables):
             return "Error: Direction vector must match the number of variables."
-        expression = safe_sympify(expr)
+        expression = sympify(expr)
         sym_vars = [symbols(v) for v in variables]
         grad = Matrix([diff(expression, var) for var in sym_vars])
         dir_vector = Matrix(direction)
@@ -394,8 +352,8 @@ def solve_directional_derivative(expr: str, variables: list, direction: list) ->
 def solve_greens_theorem(vector_field: list, variables: list) -> str:
     try:
         x, y = [symbols(v) for v in variables]
-        M = safe_sympify(vector_field[0])
-        N = safe_sympify(vector_field[1])
+        M = sympify(vector_field[0])
+        N = sympify(vector_field[1])
         curl_2d = diff(N, x) - diff(M, y)
         return str(curl_2d)
     except Exception as e:
@@ -404,12 +362,12 @@ def solve_greens_theorem(vector_field: list, variables: list) -> str:
 def solve_stokes_theorem(vector_field: list, params: list, surface: list, bounds: list) -> str:
     try:
         u, v = symbols(params)
-        r = Matrix([safe_sympify(expr) for expr in surface])
+        r = Matrix([sympify(expr) for expr in surface])
         ru = r.diff(u)
         rv = r.diff(v)
         normal = ru.cross(rv)  # 3x1 vector
 
-        F = Matrix([safe_sympify(f) for f in vector_field])
+        F = Matrix([sympify(f) for f in vector_field])
         curl = Matrix([
             diff(F[2], symbols("y")) - diff(F[1], symbols("z")),
             diff(F[0], symbols("z")) - diff(F[2], symbols("x")),
@@ -432,8 +390,8 @@ def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr
         sym_vars = [symbols(v) for v in variables]
         
         # Parse expressions
-        f = safe_sympify(f_expr)
-        g_constraint = safe_sympify(g_expr)
+        f = sympify(f_expr)
+        g_constraint = sympify(g_expr)
         
         # Handle constraint format - convert "g = k" to "g - k = 0"
         if hasattr(g_constraint, 'lhs') and hasattr(g_constraint, 'rhs'):
