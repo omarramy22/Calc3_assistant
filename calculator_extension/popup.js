@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const operationConfigs = {
     partial_derivative: {
       fields: [
-        { id: 'function', label: 'Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2' },
+        { id: 'function', label: 'Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2 + x*y' },
         { id: 'variables', label: 'differentiation Variables (comma-separated)', placeholder: 'x, y' }
       ]
     },
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     arc_length: {
       fields: [
-        { id: 'parametric', label: 'Parametric Functions', placeholder: '2t, 4t, t^2' },
+        { id: 'parametric', label: 'Parametric Functions', placeholder: '2*t, 4*t, t^2' },
         { id: 'parameter', label: 'Parameter', placeholder: 't' },
         { id: 'limits', label: 'Parameter Limits', placeholder: '0, 1' }
       ]
@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
     lagrange_multipliers: {
       fields: [
         { id: 'function', label: 'Function to optimize f(x,y,z)', placeholder: 'x^2 + y^2 + z^2' },
-        { id: 'constraint', label: 'Constraint g(x,y,z) = k', placeholder: 'x + y + z - 1' }
+        { id: 'constraint', label: 'Constraint g(x,y,z) - k', placeholder: 'x + y + z - 1' }
       ]
     }
   };
@@ -261,12 +261,12 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (operation === 'triple_integral_polar') {
           integralButton = {
             symbol: '∭ Generate Cylindrical Integral',
-            latex: '\\int_{0}^{\\pi} \\int_{0}^{1} \\int_{0}^{1} ( r \\cdot f(r, \\theta, z) ) \\, dz\\, dr \\, d\\theta'
+            latex: '\\int_{0}^{\\pi} \\int_{0}^{1} \\int_{0}^{1} ( r * f(r, \\theta, z) ) \\, dz\\, dr \\, d\\theta'
           };
         } else if (operation === 'triple_integral_cylindrical') {
           integralButton = {
             symbol: '∭ Generate Spherical Integral',
-            latex: '\\int_{0}^{\\pi} \\int_{0}^{\\pi} \\int_{0}^{1} ( \\rho^2 \\cdot \\sin(\\phi) \\cdot f(\\rho, \\theta, \\phi) ) \\, d\\rho\\, d\\theta\\, d\\phi'
+            latex: '\\int_{0}^{\\pi} \\int_{0}^{\\pi} \\int_{0}^{1} ( \\rho^2 * \\sin(\\phi) * f(\\rho, \\theta, \\phi) ) \\, d\\rho\\, d\\theta\\, d\\phi'
           };
         }
 

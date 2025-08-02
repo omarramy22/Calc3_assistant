@@ -36,7 +36,7 @@ def clean_trig_result(result, debug=False):
     # If we made string replacements, convert back to sympy expression
     if result_str != original_str:
         try:
-            result = safe_sympify(result_str)
+            result = sympify(result_str)
             if debug:
                 print(f"DEBUG: After string replacement: {result}")
         except:
@@ -177,30 +177,13 @@ def solve_gradient(expr: str, variables: list) -> list[str]:
         return f"Error: {str(e)}"
 
 def solve_multiple_integral(expr: str, limits: list) -> str:
-    try:
-        print(f"DEBUG solve_multiple_integral: expr='{expr}', limits={limits}")
-        
+    try:        
         # Create symbols for all variables first
         all_vars = {}
         for var, _, _ in limits:
             all_vars[var] = symbols(var)
         
-        print(f"DEBUG solve_multiple_integral: created symbols={all_vars}")
-        
-        # Special handling for common patterns like 'xy' -> 'x*y'
-        expr_processed = expr
-        if expr == 'xy' and 'x' in all_vars and 'y' in all_vars:
-            expr_processed = 'x*y'
-            print(f"DEBUG solve_multiple_integral: converted 'xy' to 'x*y'")
-        elif expr == 'xyz' and 'x' in all_vars and 'y' in all_vars and 'z' in all_vars:
-            expr_processed = 'x*y*z'
-            print(f"DEBUG solve_multiple_integral: converted 'xyz' to 'x*y*z'")
-        
-        # Parse the expression with the correct symbols
-        expression = sympify(expr_processed, locals=all_vars)
-        print(f"DEBUG solve_multiple_integral: sympified expression={expression}")
-        print(f"DEBUG solve_multiple_integral: expression free symbols={expression.free_symbols}")
-        print(f"DEBUG solve_multiple_integral: expression type: {type(expression)}")
+        expression = sympify(expr, locals=all_vars)
         
         # Apply integrals in order: outer to inner
         for i, (var, a, b) in enumerate(limits):
@@ -208,29 +191,20 @@ def solve_multiple_integral(expr: str, limits: list) -> str:
             a_sym = sympify(a, locals=all_vars)
             b_sym = sympify(b, locals=all_vars)
             
-            print(f"DEBUG solve_multiple_integral: Integrating step {i+1}: ∫({expression}) d{var_sym} from {a_sym} to {b_sym}")
-            print(f"DEBUG solve_multiple_integral: Before integration - expression type: {type(expression)}")
-            print(f"DEBUG solve_multiple_integral: Before integration - var_sym type: {type(var_sym)}")
-            
             # Perform the integration
             integrated = integrate(expression, (var_sym, a_sym, b_sym))
-            print(f"DEBUG solve_multiple_integral: Raw integration result: {integrated}")
             
             # Force evaluation if it's still an Integral object
             if hasattr(integrated, 'doit'):
                 expression = integrated.doit()
-                print(f"DEBUG solve_multiple_integral: After doit(): {expression}")
             else:
                 expression = integrated
             
-            print(f"DEBUG solve_multiple_integral: Result after step {i+1}: {expression}")
         
         # Final simplification
         result = expression.simplify()
-        print(f"DEBUG solve_multiple_integral: Final result after simplify(): {result}")
         
         final_str = str(result)
-        print(f"DEBUG solve_multiple_integral: Final string result: '{final_str}'")
         return final_str
         
     except Exception as e:
@@ -300,7 +274,7 @@ def solve_line_integral(field, param: str, curve: list, bounds: list = [0, 1]) -
 # Surface integral 
 def solve_surface_integral(field, params, surface, bounds):
     try:
-        u, v = symbols(params)
+        u, v = sympify(symbols(params))
         x, y, z = symbols("x y z")
         r = Matrix([sympify(expr) for expr in surface])
         ru = r.diff(u)
@@ -323,7 +297,7 @@ def solve_surface_integral(field, params, surface, bounds):
         else:
             return "Error: Could not determine field type (expected scalar or 3D vector)."
 
-        result = integrate(integrand, (u, bounds[0][0], bounds[0][1]), (v, bounds[1][0], bounds[1][1]))
+        result = integrate(integrand, (u, bounds[0][0], bounds[0][1]), (v, bounds[1][0], bounds[1][1])).doit()
         return str(result)
 
     except Exception as e:
@@ -541,3 +515,4 @@ def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr
         import traceback
         traceback.print_exc()
         return {"error": f"Error solving Lagrange multipliers: {str(e)}"}
+    

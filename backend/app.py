@@ -188,7 +188,6 @@ def calculate():
             # Basic parameters for surface integrals
             params = ['u', 'v']
             bounds = [(0, 1), (0, 1)]
-            
             return jsonify({
                 "result": solve_surface_integral(vector_field, params, str(surface_expr), bounds)
             })
