@@ -38,15 +38,18 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 ### 🎨 User Experience
 - **LaTeX Input Support** - Parse complex mathematical expressions like `\sin\left(t\right)`
 - **Real-time Calculation** - Instant results as you type
-- **Parameter Persistence** - Browser remembers your settings
+- **Modern Interface** - Beautiful gradient backgrounds and smooth animations
 - **Error Handling** - Graceful error messages and validation
 - **Responsive Design** - Works on desktop and mobile devices
+- **Browser Extension** - Quick access popup calculator
 
 ### 🔧 Technical Features
+- **Single API Endpoint** - Unified `/calculate` endpoint handling all operations
 - **Advanced Parsing** - Multi-tier parsing system (latex2sympy → SymPy → fallbacks)
 - **Edge Case Handling** - Handles malformed LaTeX like `t^{}`
 - **Comprehensive Functions** - All trigonometric, logarithmic, and exponential functions
-- **Browser Extension Ready** - Can be packaged as Chrome/Firefox extension
+- **Modern UI** - Gradient backgrounds, smooth animations, and glass-morphism effects
+- **Cross-browser Support** - Chrome and Firefox extension compatibility
 
 ## 🖼️ Screenshots
 
@@ -64,7 +67,7 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 ### Prerequisites
 - Python 3.8+
-- Modern web browser
+- Modern web browser (Chrome, Firefox, Edge)
 
 ### Quick Start
 1. **Clone the repository**
@@ -75,16 +78,19 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 2. **Install Python dependencies**
    ```bash
-   pip install sympy flask latex2sympy2 antlr4-python3-runtime
+   pip install flask flask-cors sympy latex2sympy2 antlr4-python3-runtime
    ```
 
 3. **Start the server**
-   ```bash
-   python backend/test_server.py
-   ```
-   Or use the batch file:
+   - **Using the batch file (Windows):**
    ```bash
    start_flask.bat
+   ```
+   
+   - **Or manually:**
+   ```bash
+   cd backend
+   python app.py
    ```
 
 4. **Open in browser**
@@ -93,9 +99,12 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
    ```
 
 ### Browser Extension Installation
-1. Open Chrome/Firefox extension settings
-2. Enable "Developer mode"
+1. Open Chrome/Firefox and go to Extensions page
+   - Chrome: `chrome://extensions/`
+   - Firefox: `about:addons`
+2. Enable "Developer mode" (Chrome) or "Debug add-ons" (Firefox)
 3. Click "Load unpacked" and select the `calculator_extension` folder
+4. The AUC Calculator icon should appear in your browser toolbar
 
 ## 💻 Usage
 
@@ -116,14 +125,21 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 ### API Endpoints
 ```
-POST /calculate/partial_derivative
-POST /calculate/arc_length
-POST /calculate/gradient
-POST /calculate/multiple_integral
-POST /calculate/polar_integral
-POST /calculate/divergence
-POST /calculate/curl
-# ... and more
+POST /calculate
+# Single endpoint that handles all operations based on "operation" parameter:
+# - partial_derivative
+# - double_integral  
+# - double_integral_polar
+# - arc_length
+# - gradient
+# - divergence
+# - curl
+# - line_integral
+# - surface_integral
+# - directional_derivative
+# - greens_theorem
+# - stokes_theorem
+# - lagrange_multipliers
 ```
 
 ## 📁 Project Structure
@@ -131,56 +147,57 @@ POST /calculate/curl
 ```
 AUC_calculator/
 ├── 🌐 Frontend
-│   ├── calculator_extension/     # Browser extension
-│   │   ├── popup.html           # Main interface
-│   │   ├── popup.js             # Frontend logic
-│   │   ├── styles.css           # Styling
-│   │   └── manifest.json        # Extension config
+│   └── calculator_extension/     # Browser extension
+│       ├── popup.html           # Main interface
+│       ├── popup.js             # Frontend logic  
+│       ├── styles.css           # Modern styling with gradients
+│       ├── manifest.json        # Extension configuration
+│       └── icons/               # Extension icons
 │   
 ├── ⚙️ Backend
-│   ├── app.py                   # Flask server & API
-│   ├── calc3.py                 # Mathematical functions
+│   ├── app.py                   # Flask server & single API endpoint
+│   ├── calc3.py                 # Mathematical computation functions
 │   ├── parser.py                # LaTeX parsing engine
-│   └── README.md                # Backend documentation
-│
-├── 🧪 Testing
-│   ├── comprehensive_test.py    # Complete validation
-│   ├── frontend_test_guide.py   # Frontend test cases
-│   └── test_server.py           # Development server
+│   ├── static/                  # Static web files
+│   │   └── index.html          # Web interface
+│   └── __pycache__/            # Python cache files
 │
 └── 📋 Configuration
     ├── start_flask.bat          # Windows startup script
-    └── README.md                # This file
+    └── README.md                # This documentation
 ```
 
 ## 📚 API Documentation
 
 ### Partial Derivatives
 ```javascript
-POST /calculate/partial_derivative
+POST /calculate
 {
-    "expression": "\\sin\\left(x\\right) + x^2",
-    "variables": ["x"],
-    "order": 1
+    "operation": "partial_derivative",
+    "function": "\\sin\\left(x\\right) + x^2",
+    "variables": "x",
+    "order": "1"
 }
 ```
 
-### Arc Length
+### Double Integrals
 ```javascript
-POST /calculate/arc_length
+POST /calculate
 {
-    "expressions": ["2t", "\\sin\\left(t\\right)"],
-    "parameter": "t",
-    "bounds": ["0", "\\pi"]
+    "operation": "double_integral",
+    "function": "x*y",
+    "variables": "x,y",
+    "limits": "0,1,0,2"
 }
 ```
 
 ### Vector Operations
 ```javascript
-POST /calculate/divergence
+POST /calculate
 {
-    "vector_field": ["x^2", "y^2", "z^2"],
-    "variables": ["x", "y", "z"]
+    "operation": "divergence",
+    "vector_field": "x^2,y^2,z^2",
+    "variables": "x,y,z"
 }
 ```
 
@@ -189,20 +206,22 @@ POST /calculate/divergence
 ### Setting Up Development Environment
 1. **Install dependencies**
    ```bash
-   pip install -r requirements.txt  # If available
-   # Or manually install: sympy flask latex2sympy2 antlr4-python3-runtime
+   pip install flask flask-cors sympy latex2sympy2 antlr4-python3-runtime
    ```
 
-2. **Run tests**
+2. **Start development server**
    ```bash
+   # Using batch file
+   start_flask.bat
+   
+   # Or manually
    cd backend
-   python comprehensive_test.py
+   python app.py
    ```
 
-3. **Start development server**
-   ```bash
-   python backend/test_server.py
-   ```
+3. **Access the application**
+   - Web interface: `http://localhost:5000`
+   - Browser extension: Load `calculator_extension` folder
 
 ### Key Components
 - **Parser System**: Multi-tier LaTeX parsing for robust expression handling
@@ -212,33 +231,31 @@ POST /calculate/divergence
 
 ### Adding New Features
 1. Add mathematical function to `calc3.py`
-2. Create API endpoint in `app.py`
+2. Update the operation handling in `app.py` 
 3. Add frontend controls in `popup.html/popup.js`
-4. Write tests in `comprehensive_test.py`
+4. Test functionality manually in both web and extension interfaces
 
 ## 🧪 Testing
 
-### Backend Testing
-```bash
-# Complete functionality test
-python backend/comprehensive_test.py
-
-# Frontend test guide
-python backend/frontend_test_guide.py
-```
-
 ### Manual Testing
-1. Start test server: `python backend/test_server.py`
-2. Open: http://localhost:5000
-3. Test various mathematical expressions
-4. Verify LaTeX parsing works correctly
+1. **Start the server**: 
+   ```bash
+   start_flask.bat
+   ```
+   
+2. **Open browser**: Navigate to `http://localhost:5000`
 
-### Test Cases
-- ✅ Basic expressions: `2t`, `x^2`
-- ✅ Trigonometric: `\sin\left(t\right)`, `\cos\left(x\right)`
-- ✅ Edge cases: `t^{}`, empty inputs
-- ✅ Complex expressions: `\frac{x^2}{2} + \sqrt{y}`
-- ✅ All mathematical operations
+3. **Test mathematical operations**:
+   - Try basic expressions: `2t`, `x^2`
+   - Test trigonometric functions: `\sin\left(t\right)`, `\cos\left(x\right)`
+   - Verify edge cases: `t^{}`, empty inputs
+   - Test complex expressions: `\frac{x^2}{2} + \sqrt{y}`
+
+### Browser Extension Testing
+1. Load the extension in Chrome/Firefox
+2. Click the calculator icon in the toolbar
+3. Test all mathematical operations in the popup
+4. Verify LaTeX rendering works correctly
 
 ## 🤝 Contributing
 
@@ -249,7 +266,9 @@ python backend/frontend_test_guide.py
    ```
 3. **Make changes and test**
    ```bash
-   python backend/comprehensive_test.py
+   # Start server and test manually
+   start_flask.bat
+   # Then open http://localhost:5000
    ```
 4. **Commit changes**
    ```bash
@@ -262,10 +281,11 @@ python backend/frontend_test_guide.py
 6. **Open Pull Request**
 
 ### Development Guidelines
-- Write tests for new features
-- Follow existing code style
-- Update documentation
-- Test LaTeX parsing thoroughly
+- Write clear, documented code
+- Follow existing code style and patterns
+- Update documentation when adding features
+- Test LaTeX parsing thoroughly with edge cases
+- Ensure both web interface and browser extension work correctly
 
 ## 📄 License
 
