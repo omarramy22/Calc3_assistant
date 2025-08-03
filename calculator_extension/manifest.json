@@ -1,23 +1,56 @@
 {
   "manifest_version": 3,
-  "name": "AUC Calculator",
-  "description": "Symbolic multivariable calculator for AUC students.",
+  "name": "Calc3 Assistant",
   "version": "1.0",
+  "description": "A multivariable calculus assistant with symbolic computations for Chrome and Firefox.",
+
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+
   "action": {
     "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
+    "default_icon": "icons/48.png",
+    "default_title": "Calc3 Assistant"
   },
-  "permissions": [],
-  "host_permissions": [
-    "http://localhost:5000/" 
+
+"background": {
+  "scripts": ["background.js"]
+},
+
+
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
   ],
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+
+  "host_permissions": [
+    "http://localhost:5000/*"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "styles.css",
+        "icons/*",
+        "mathlive.min.js",
+        "mathlive.min.css",
+        "compute-engine.min.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "omarramy@aucegypt.edu",
+      "strict_min_version": "109.0"
+    }
   }
 }

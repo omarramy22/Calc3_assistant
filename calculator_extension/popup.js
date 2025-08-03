@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", function () {
+  // Send keep-alive signal to background script
+  chrome.runtime.sendMessage({action: 'keepActive'}, (response) => {
+    console.log('Extension keep-alive activated');
+  });
+  
   const courseSelect = document.getElementById("course");
   const operationSection = document.getElementById("operation-section");
   const operationSelect = document.getElementById("operation-select");
@@ -480,7 +485,9 @@ document.addEventListener("DOMContentLoaded", function () {
             let cleanSol = sol.toString();
             cleanSol = cleanSol
               .replace(/\*\*/g, '^')  // Convert ** to ^
+              .replace(/\^\(([^)]+)\)/g, '^{$1}')  // Convert ^(expr) to ^{expr}
               .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
+              .replace(/\bpi\b/g, '\\pi')  // Convert pi to π symbol
               .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
               .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
               .replace(/\$\$/g, '');  // Remove $$ delimiters if present
@@ -566,7 +573,9 @@ document.addEventListener("DOMContentLoaded", function () {
           let cleanSol = sol.toString();
           cleanSol = cleanSol
             .replace(/\*\*/g, '^')  // Convert ** to ^
+            .replace(/\^\(([^)]+)\)/g, '^{$1}')  // Convert ^(expr) to ^{expr}
             .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
+            .replace(/\bpi\b/g, '\\pi')  // Convert pi to π symbol
             .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
             .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
             .replace(/\$\$/g, '');  // Remove $$ delimiters if present
@@ -607,7 +616,9 @@ document.addEventListener("DOMContentLoaded", function () {
         // Convert Python-style expressions to proper LaTeX more carefully
         cleanResult = cleanResult
           .replace(/\*\*/g, '^')  // Convert ** to ^
+          .replace(/\^\(([^)]+)\)/g, '^{$1}')  // Convert ^(expr) to ^{expr}
           .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
+          .replace(/\bpi\b/g, '\\pi')  // Convert pi to π symbol
           .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
           .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
           .replace(/\$\$/g, '');  // Remove $$ delimiters if present
@@ -697,52 +708,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Collect input values, ignoring placeholder text
     config.fields.forEach(field => {
-      const mathField = document.getElementById(`input-${field.id}`);
-      if (mathField) {
-        // Try to get plain text instead of LaTeX
-        let value = '';
-        let rawValue = '';
-        
-        try {
-          // Get the raw LaTeX value first for debugging
-          rawValue = mathField.getValue();
-          
-          // Try different methods to get plain text
-          if (mathField.expression && mathField.expression !== rawValue) {
-            value = mathField.expression;
-          } else if (mathField.value && mathField.value !== rawValue) {
-            value = mathField.value;
-          } else {
-            // Use the raw LaTeX value - backend will handle conversion
-            value = rawValue;
-          }
-        } catch (e) {
-          value = mathField.getValue();
-        }
-        
-        value = value.trim();
-                
-        // For arc length parameter field, handle specially
-        if (selectedOperation === 'arc_length' && field.id === 'parameter') {
-          // If value is empty, use 't' as default
-          // But if user actually typed 't', keep it (don't treat as placeholder)
-          if (!value) {
-            value = 't';
-          }
-          // If user explicitly typed 't', keep it as is (no special handling needed)
-        } else {
-          // For other fields, empty placeholder means empty value
-          if (value === field.placeholder) {
-            value = '';
-          }
-        }
-        
-        inputData[field.id] = value;
-      }
-    });
+  const mathField = document.getElementById(`input-${field.id}`);
+  if (!mathField || typeof mathField.getValue !== "function") return;
 
+  let value = "";
+  
+  try {
+    value = mathField.getValue(); // Always returns a string
+    value = typeof value === "string" ? value.trim() : "";
+  } catch (e) {
+    console.warn(`Error reading value for field '${field.id}'`, e);
+    value = "";
+  }
+
+  // Arc length parameter default
+  if (selectedOperation === 'arc_length' && field.id === 'parameter') {
+    if (!value) value = 't';
+  } else {
+    if (value === field.placeholder) value = '';
+  }
+
+  inputData[field.id] = value;
+});
     // Debug: log the complete input data being sent
-    
+    console.log("Input Data:", inputData);
     // Validate required fields
     let missingFields = [];
     
@@ -777,6 +766,14 @@ document.addEventListener("DOMContentLoaded", function () {
           displayError(data.result);
         } else {
           displayResult(data.result, selectedOperation);
+          
+          // Save successful calculation to background
+          chrome.runtime.sendMessage({
+            action: 'saveCalculation',
+            operation: selectedOperation,
+            input: inputData,
+            result: data.result
+          });
         }
       } else {
         displayError(data.error || "An error occurred.");
