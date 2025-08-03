@@ -68,21 +68,23 @@ document.addEventListener("DOMContentLoaded", function () {
     scalar_line_integral: {
       fields: [
         { id: 'function', label: 'Scalar Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2' },
-        { id: 'curve', label: 'Parametric Curve r(t)', placeholder: '2t, -2t, t' },
+        { id: 'curve', label: 'Parametric Curve r(t)', placeholder: '2*t, -2*t, t' },
         { id: 'limits', label: 'Parameter Limits', placeholder: '0, 1' }
       ]
     },
     vector_line_integral: {
       fields: [
         { id: 'vector_field', label: 'Vector Field F(x,y,z)', placeholder: 'x, y, z' },
-        { id: 'curve', label: 'Parametric Curve r(t)', placeholder: '2t, -2t, t' },
+        { id: 'curve', label: 'Parametric Curve r(t)', placeholder: '2*t, -2*t, t' },
         { id: 'limits', label: 'Parameter Limits', placeholder: '0, 1' }
       ]
     },
     surface_integral: {
       fields: [
         { id: 'vector_field', label: 'Vector Field F(x,y,z)', placeholder: 'P(x,y,z), Q(x,y,z), R(x,y,z)' },
-        { id: 'surface', label: 'Surface S', placeholder: 'z = x^2 + y^2' }
+        { id: 'surface', label: 'Surface S (parametric)', placeholder: 'u*cos(v), u*sin(v), u' },
+        { id: 'u_bounds', label: 'U Parameter Bounds', placeholder: '0, 1' },
+        { id: 'v_bounds', label: 'V Parameter Bounds', placeholder: '0, 1' }
       ]
     },
     directional_derivative: {
@@ -95,13 +97,16 @@ document.addEventListener("DOMContentLoaded", function () {
     greens_theorem: {
       fields: [
         { id: 'vector_field', label: 'Vector Field F = [P, Q]', placeholder: 'x*y, x^2 + y^2' },
-        { id: 'curve', label: 'Closed Curve C', placeholder: 'x^2 + y^2 = 4' }
+        { id: 'x_bounds', label: 'X Parameter Bounds', placeholder: '0, 1' },
+        { id: 'y_bounds', label: 'Y Parameter Bounds', placeholder: '0, 1' }
       ]
     },
     stokes_theorem: {
       fields: [
         { id: 'vector_field', label: 'Vector Field F(x,y,z)', placeholder: 'y*z, x*z, x*y' },
-        { id: 'surface', label: 'Surface S with boundary C', placeholder: 'z = x^2 + y^2, z ≤ 1' }
+        { id: 'surface', label: 'Surface S (parametric)', placeholder: 'u*cos(v), u*sin(v), u' },
+        { id: 'u_bounds', label: 'U Parameter Bounds', placeholder: '0, 1' },
+        { id: 'v_bounds', label: 'V Parameter Bounds', placeholder: '0, 2*pi' }
       ]
     },
     lagrange_multipliers: {

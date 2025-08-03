@@ -181,15 +181,48 @@ def calculate():
         elif operation == "surface_integral":
             vector_field_str = data.get("vector_field", "")
             surface_str = data.get("surface", "")
+            u_bounds_str = data.get("u_bounds", "0,1")  # New field for u bounds
+            v_bounds_str = data.get("v_bounds", "0,1")  # New field for v bounds
             
             vector_field = parse_vector(vector_field_str)
-            surface_expr = parse_expression(surface_str)
+            surface = parse_vector(surface_str)  # Parse as vector/tuple
             
-            # Basic parameters for surface integrals
-            params = ['u', 'v']
-            bounds = [(0, 1), (0, 1)]
+            all_symbols = set()
+            
+            # Get symbols from vector field
+            for field_component in vector_field:
+                field_expr = parse_expression(field_component)
+                all_symbols.update(field_expr.free_symbols)
+            
+            # Get symbols from surface (loop over each element)
+            for surface_component in surface:
+                surface_expr = parse_expression(surface_component)
+                all_symbols.update(surface_expr.free_symbols)
+            
+            # Filter out common constants and coordinate variables
+            excluded = {'pi', 'e', 'I', 'x', 'y', 'z'}
+            params = [str(s) for s in all_symbols if str(s) not in excluded]
+            params.sort()  # Sort for consistency
+            
+            # If no parameters found, use default u, v
+            if not params:
+                params = ['u', 'v']
+            elif len(params) == 1:
+                params.append('v')  # Add second parameter if only one found
+            
+            # Extract variables (x, y, z) for the function call
+            variables = [str(s) for s in all_symbols if str(s) in {'x', 'y', 'z'}]
+            if not variables:
+                variables = ['x', 'y', 'z']  # Default variables
+            variables.sort()  # Sort for consistency
+            
+            # Parse the bounds for u and v
+            u_bounds = parse_limits(u_bounds_str)
+            v_bounds = parse_limits(v_bounds_str)
+            bounds = [(u_bounds[0], u_bounds[1]), (v_bounds[0], v_bounds[1])]
+            
             return jsonify({
-                "result": solve_surface_integral(vector_field, params, str(surface_expr), bounds)
+                "result": solve_surface_integral(vector_field, params, surface, bounds, variables)
             })
             
         elif operation == "directional_derivative":
@@ -209,26 +242,84 @@ def calculate():
             
         elif operation == "greens_theorem":
             vector_field_str = data.get("vector_field", "")
+            x_bounds_str = data.get("x_bounds", "0,1")  # New field for x bounds
+            y_bounds_str = data.get("y_bounds", "0,1")  # New field for y bounds
             
             vector_field = parse_vector(vector_field_str)
-            variables = ['x', 'y']  # Green's theorem is 2D
+            
+            # Extract variables from the vector field expression
+            all_symbols = set()
+            for field_component in vector_field:
+                field_expr = parse_expression(field_component)
+                all_symbols.update(field_expr.free_symbols)
+            
+            # Filter to get coordinate variables, default to x, y for 2D
+            excluded = {'pi', 'e', 'I', 'u', 'v', 't', 'r', 'theta', 'phi', 'rho'}
+            variables = [str(s) for s in all_symbols if str(s) not in excluded]
+            variables.sort()  # Sort for consistency
+            
+            # Default to x, y if no variables found or keep it 2D
+            if not variables or len(variables) < 2:
+                variables = ['x', 'y']
+            else:
+                # Keep only first 2 variables for Green's theorem (2D)
+                variables = variables[:2]
+            
+            # Parse the bounds for x and y
+            x_bounds = parse_limits(x_bounds_str)
+            y_bounds = parse_limits(y_bounds_str)
+            bounds = [(x_bounds[0], x_bounds[1]), (y_bounds[0], y_bounds[1])]
             
             return jsonify({
-                "result": solve_greens_theorem(vector_field, variables)
+                "result": solve_greens_theorem(vector_field, bounds, variables)
             })
             
         elif operation == "stokes_theorem":
             vector_field_str = data.get("vector_field", "")
             surface_str = data.get("surface", "")
+            u_bounds_str = data.get("u_bounds", "0,1")  # New field for u bounds
+            v_bounds_str = data.get("v_bounds", "0,1")  # New field for v bounds
             
             vector_field = parse_vector(vector_field_str)
-            surface = parse_vector(surface_str)
+            surface = parse_vector(surface_str)  # Parse as vector/tuple
             
-            params = ['u', 'v']
-            bounds = [(0, 1), (0, 1)]
+            # Extract variables from both vector field and surface
+            all_symbols = set()
+            
+            # Get symbols from vector field
+            for field_component in vector_field:
+                field_expr = parse_expression(field_component)
+                all_symbols.update(field_expr.free_symbols)
+            
+            # Get symbols from surface (loop over each element)
+            for surface_component in surface:
+                surface_expr = parse_expression(surface_component)
+                all_symbols.update(surface_expr.free_symbols)
+            
+            # Filter out common constants and coordinate variables
+            excluded = {'pi', 'e', 'I', 'x', 'y', 'z'}
+            params = [str(s) for s in all_symbols if str(s) not in excluded]
+            params.sort()  # Sort for consistency
+            
+            # If no parameters found, use default u, v
+            if not params:
+                params = ['u', 'v']
+            elif len(params) == 1:
+                params.append('v')  # Add second parameter if only one found
+            
+            # Extract variables (x, y, z) for the function call
+            variables = [str(s) for s in all_symbols if str(s) in {'x', 'y', 'z'}]
+            if not variables:
+                variables = ['x', 'y', 'z']  # Default variables
+            variables.sort()  # Sort for consistency
+            
+            # Parse the bounds for u and v
+            u_bounds = parse_limits(u_bounds_str)
+            v_bounds = parse_limits(v_bounds_str)
+            bounds = [(u_bounds[0], u_bounds[1]), (v_bounds[0], v_bounds[1])]
             
             return jsonify({
-                "result": solve_stokes_theorem(vector_field, params, surface, bounds)
+                "result": solve_stokes_theorem(vector_field, params, surface, bounds, variables)
             })
             
         elif operation == "lagrange_multipliers":

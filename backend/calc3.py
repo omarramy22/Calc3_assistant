@@ -272,10 +272,10 @@ def solve_line_integral(field, param: str, curve: list, bounds: list = [0, 1]) -
         return f"Error: {str(e)}"
 
 # Surface integral 
-def solve_surface_integral(field, params, surface, bounds):
+def solve_surface_integral(field, params, surface, bounds, field_vars=("x", "y", "z")):
     try:
-        u, v = sympify(symbols(params))
-        x, y, z = symbols("x y z")
+        u, v = symbols(params)
+        field_syms = symbols(field_vars)
         r = Matrix([sympify(expr) for expr in surface])
         ru = r.diff(u)
         rv = r.diff(v)
@@ -284,7 +284,8 @@ def solve_surface_integral(field, params, surface, bounds):
 
         is_vector = isinstance(field, list) and len(field) == 3
         is_scalar = isinstance(field, str) or (isinstance(field, list) and len(field) == 1)
-        substitutions = {x: r[0], y: r[1], z: r[2]}
+
+        substitutions = dict(zip(field_syms, r))
 
         if is_vector:
             F = Matrix([sympify(f) for f in field])
@@ -323,17 +324,22 @@ def solve_directional_derivative(expr: str, variables: list, direction: list) ->
         return str(directional_derivative)
     except Exception as e:
         return f"Error: {str(e)}"
-def solve_greens_theorem(vector_field: list, variables: list) -> str:
+def solve_greens_theorem(vector_field: list, region_bounds: list, variables: list):
     try:
-        x, y = [symbols(v) for v in variables]
+        x, y = symbols(variables)
+
         M = sympify(vector_field[0])
         N = sympify(vector_field[1])
         curl_2d = diff(N, x) - diff(M, y)
-        return str(curl_2d)
+        (x_lower, x_upper), (y_lower, y_upper) = region_bounds
+        result = integrate(integrate(curl_2d, (x, x_lower, x_upper)), (y, y_lower, y_upper))
+
+        return str(result)
+    
     except Exception as e:
         return f"Error: {str(e)}"
     
-def solve_stokes_theorem(vector_field: list, params: list, surface: list, bounds: list) -> str:
+def solve_stokes_theorem(vector_field: list, params: list, surface: list, bounds: list, field_vars=("x", "y", "z")) -> str:
     try:
         u, v = symbols(params)
         r = Matrix([sympify(expr) for expr in surface])
@@ -348,12 +354,12 @@ def solve_stokes_theorem(vector_field: list, params: list, surface: list, bounds
             diff(F[1], symbols("x")) - diff(F[0], symbols("y")),
         ])
 
-        x, y, z = symbols("x y z")
+        x, y, z = symbols(field_vars)
         substitutions = {x: r[0], y: r[1], z: r[2]}
         curl_sub = curl.subs(substitutions)
 
         result = integrate(curl_sub.dot(normal), (u, bounds[0][0], bounds[0][1]), (v, bounds[1][0], bounds[1][1]))        
-        return str(result)
+        return str(simplify(result))
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -515,4 +521,3 @@ def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr
         import traceback
         traceback.print_exc()
         return {"error": f"Error solving Lagrange multipliers: {str(e)}"}
-    
