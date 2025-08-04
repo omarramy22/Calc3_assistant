@@ -20,14 +20,13 @@
   "scripts": ["background.js"]
 },
 
-
   "permissions": [
     "storage",
     "activeTab"
   ],
 
   "host_permissions": [
-    "https://course-calculator.onrender.com/*"
+    "http://localhost:5000/*"
   ],
 
   "web_accessible_resources": [
