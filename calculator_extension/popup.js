@@ -161,6 +161,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const mathField = document.createElement('math-field');
       mathField.id = `input-${field.id}`;
       mathField.setAttribute('virtual-keyboard-mode', 'manual');
+      mathField.setAttribute('smart-mode', 'on');
+      mathField.setAttribute('auto-convert-latex', 'off');
+      mathField.setAttribute('inline-shortcut-timeout', '0');
+      mathField.setAttribute('smart-fence', 'on');
+      mathField.setAttribute('smart-superscript', 'off');
+      mathField.setAttribute('remove-extraneous-parentheses', 'off');
       mathField.style.width = '100%';
       mathField.style.minHeight = '40px';
             
