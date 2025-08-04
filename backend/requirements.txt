@@ -1,12 +1,12 @@
 # AUC Calculator Requirements
 # Compatible with Python 3.13.3
 # Core web framework
-Flask==3.0.3
-Flask-CORS==4.0.1
+Flask==3.1.1
+Flask-CORS==6.0.1
 
 # Mathematical computation engine
-sympy==1.13.1
-gunicorn==21.2.0
+sympy==1.14.0
+gunicorn==23.0.0
 antlr4-python3-runtime==4.11
 
 # Additional dependencies (automatically installed with above packages)

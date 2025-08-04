@@ -28,7 +28,7 @@
   ],
 
   "host_permissions": [
-    "http://localhost:5000/*"
+    "https://course-calculator.onrender.com/*"
   ],
 
   "web_accessible_resources": [
