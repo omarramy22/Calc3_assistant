@@ -793,7 +793,7 @@ document.addEventListener("DOMContentLoaded", function () {
     result.textContent = "Calculating...";
 
     try {
-      const response = await fetch("http://localhost:5000/calculate", {
+      const response = await fetch("https://course-calculator.onrender.com/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inputData),
