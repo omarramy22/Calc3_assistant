@@ -1,9 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // Send keep-alive signal to background script
-  chrome.runtime.sendMessage({action: 'keepActive'}, (response) => {
-    console.log('Extension keep-alive activated');
-  });
-  
   const courseSelect = document.getElementById("course");
   const operationSection = document.getElementById("operation-section");
   const operationSelect = document.getElementById("operation-select");
@@ -166,9 +161,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const mathField = document.createElement('math-field');
       mathField.id = `input-${field.id}`;
       mathField.setAttribute('virtual-keyboard-mode', 'manual');
+      mathField.setAttribute('smart-mode', 'on');
+      mathField.setAttribute('auto-convert-latex', 'off');
+      mathField.setAttribute('inline-shortcut-timeout', '0');
+      mathField.setAttribute('smart-fence', 'on');
+      mathField.setAttribute('smart-superscript', 'off');
+      mathField.setAttribute('remove-extraneous-parentheses', 'off');
       mathField.style.width = '100%';
       mathField.style.minHeight = '40px';
-      
+            
       // Set placeholder using the value property for visibility
       mathField.value = field.placeholder;
       mathField.style.color = '#999';
@@ -484,12 +485,12 @@ document.addEventListener("DOMContentLoaded", function () {
             // Clean up LaTeX formatting for better display
             let cleanSol = sol.toString();
             cleanSol = cleanSol
-              .replace(/\*\*/g, '^')  // Convert ** to ^
-              .replace(/\^\(([^)]+)\)/g, '^{$1}')  // Convert ^(expr) to ^{expr}
+              .replace(/\*\*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits} for multi-digit exponents
+              .replace(/\*\*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
               .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
-              .replace(/\bpi\b/g, '\\pi')  // Convert pi to π symbol
+              .replace(/\bpi\b/g, '\\pi')  // Convert pi to \pi
               .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
-              .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
+              .replace(/([a-zA-Z0-9}])\*(?=[a-zA-Z])/g, '$1')  //remove * between variables
               .replace(/\$\$/g, '');  // Remove $$ delimiters if present
             
             mathResult.setValue(cleanSol);
@@ -572,12 +573,12 @@ document.addEventListener("DOMContentLoaded", function () {
           // Clean up LaTeX formatting for better display
           let cleanSol = sol.toString();
           cleanSol = cleanSol
-            .replace(/\*\*/g, '^')  // Convert ** to ^
-            .replace(/\^\(([^)]+)\)/g, '^{$1}')  // Convert ^(expr) to ^{expr}
+            .replace(/\*\*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits} for multi-digit exponents
+            .replace(/\*\*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
             .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
-            .replace(/\bpi\b/g, '\\pi')  // Convert pi to π symbol
+            .replace(/\bpi\b/g, '\\pi')  // Convert pi to \pi
             .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
-            .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
+            .replace(/([a-zA-Z0-9}])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables
             .replace(/\$\$/g, '');  // Remove $$ delimiters if present
           
           mathResult.setValue(cleanSol);
@@ -615,12 +616,12 @@ document.addEventListener("DOMContentLoaded", function () {
         
         // Convert Python-style expressions to proper LaTeX more carefully
         cleanResult = cleanResult
-          .replace(/\*\*/g, '^')  // Convert ** to ^
-          .replace(/\^\(([^)]+)\)/g, '^{$1}')  // Convert ^(expr) to ^{expr}
+          .replace(/\*\*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits} for multi-digit exponents
+          .replace(/\*\*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
           .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
-          .replace(/\bpi\b/g, '\\pi')  // Convert pi to π symbol
+          .replace(/\bpi\b/g, '\\pi')  // Convert pi to \pi
           .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
-          .replace(/([a-zA-Z0-9])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
+          .replace(/([a-zA-Z0-9}])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
           .replace(/\$\$/g, '');  // Remove $$ delimiters if present
         
         mathResult.setValue(cleanResult);
@@ -695,6 +696,31 @@ document.addEventListener("DOMContentLoaded", function () {
     result.appendChild(resultContainer);
   }
 
+  // Function to convert LaTeX notation to plain mathematical notation
+  function convertLatexToPlain(latexString) {
+    if (!latexString) return '';
+    
+    let plainString = latexString;
+    
+    // Only handle exponents conversion, leave everything else as-is
+    plainString = plainString
+      // Handle exponents: x^{10} -> x^10, x^{2+3} -> x^(2+3)
+      .replace(/\^{([^}]+)}/g, (match, exponent) => {
+        // If exponent is a single character/number, no parentheses needed
+        if (exponent.length === 1 || /^\d+$/.test(exponent)) {
+          return `^${exponent}`;
+        } else {
+          // For complex exponents, add parentheses
+          return `^(${exponent})`;
+        }
+      })
+      // Remove extra spaces and clean up
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    return plainString;
+  }
+
   // Handle Calculate button
   async function handleCalculate() {
     const selectedOperation = operationSelect.value;
@@ -708,30 +734,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Collect input values, ignoring placeholder text
     config.fields.forEach(field => {
-  const mathField = document.getElementById(`input-${field.id}`);
-  if (!mathField || typeof mathField.getValue !== "function") return;
+      const mathField = document.getElementById(`input-${field.id}`);
+      if (mathField) {
+        // Convert LaTeX to plain mathematical notation
+        let value = '';
+        let rawValue = '';
+        
+        try {
+          // Get the raw LaTeX value
+          rawValue = mathField.getValue();
+          
+          // Convert LaTeX to plain mathematical notation
+          value = convertLatexToPlain(rawValue);
+        } catch (e) {
+          value = mathField.getValue();
+        }
+        
+        value = value.trim();
+                
+        // For arc length parameter field, handle specially
+        if (selectedOperation === 'arc_length' && field.id === 'parameter') {
+          // If value is empty, use 't' as default
+          // But if user actually typed 't', keep it (don't treat as placeholder)
+          if (!value) {
+            value = 't';
+          }
+          // If user explicitly typed 't', keep it as is (no special handling needed)
+        } else {
+          // For other fields, empty placeholder means empty value
+          if (value === field.placeholder) {
+            value = '';
+          }
+        }
+        
+        inputData[field.id] = value;
+      }
+    });
 
-  let value = "";
-  
-  try {
-    value = mathField.getValue(); // Always returns a string
-    value = typeof value === "string" ? value.trim() : "";
-  } catch (e) {
-    console.warn(`Error reading value for field '${field.id}'`, e);
-    value = "";
-  }
-
-  // Arc length parameter default
-  if (selectedOperation === 'arc_length' && field.id === 'parameter') {
-    if (!value) value = 't';
-  } else {
-    if (value === field.placeholder) value = '';
-  }
-
-  inputData[field.id] = value;
-});
     // Debug: log the complete input data being sent
-    console.log("Input Data:", inputData);
+    
     // Validate required fields
     let missingFields = [];
     
@@ -766,14 +807,6 @@ document.addEventListener("DOMContentLoaded", function () {
           displayError(data.result);
         } else {
           displayResult(data.result, selectedOperation);
-          
-          // Save successful calculation to background
-          chrome.runtime.sendMessage({
-            action: 'saveCalculation',
-            operation: selectedOperation,
-            input: inputData,
-            result: data.result
-          });
         }
       } else {
         displayError(data.error || "An error occurred.");

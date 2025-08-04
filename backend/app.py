@@ -40,13 +40,12 @@ def calculate():
         if operation == "partial_derivative":
             function_str = data.get("function", "")
             variables_str = data.get("variables", "")
-            order_str = data.get("order", "1")
             
             # Parse using SymPy
             function_expr = parse_expression(function_str)
             variables = parse_vector(variables_str)
-            order = int(order_str) if order_str.isdigit() else 1
-            
+            order = 1
+            print(function_expr, variables, order)
             return jsonify({
                 "result": solve_partial_derivative(str(function_expr), variables, order)
             })

@@ -27,6 +27,9 @@ def parse_expression(expr):
                 expr = expr.replace('\\sin', 'sin')
                 expr = expr.replace('\\cos', 'cos')
                 expr = expr.replace('\\tan', 'tan')
+                expr = expr.replace('\\sec', 'sec')
+                expr = expr.replace('\\csc', 'csc')
+                expr = expr.replace('\\cot', 'cot')
                 expr = expr.replace('\\ln', 'log')
                 expr = expr.replace('\\log', 'log')
                 expr = expr.replace('\\pi', 'pi')
@@ -36,6 +39,7 @@ def parse_expression(expr):
         else:
             # Handle common patterns and use sympify
             expr = expr.replace('^', '**')  # Convert powers
+            # Remove curly braces in exponents: x^{2} -> x^2
             return sympify(expr)
     except:
         try:

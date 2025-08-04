@@ -1,6 +1,4 @@
 from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, simplify, trigsimp
-from sympy.abc import _clash1
-
 def clean_trig_result(result, debug=False):
     """Clean up trigonometric expressions by forcing evaluation"""
     from sympy import N, nsimplify
