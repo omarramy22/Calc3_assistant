@@ -26,6 +26,7 @@
   ],
 
   "host_permissions": [
+    "https://course-calculator.onrender.com/*",
     "http://localhost:5000/*"
   ],
 
@@ -47,7 +48,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "omarramy@aucegypt.edu",
+      "id": "omarramy20005@gmail.com",
       "strict_min_version": "109.0"
     }
   }
