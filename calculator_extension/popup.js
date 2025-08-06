@@ -164,7 +164,6 @@ document.addEventListener("DOMContentLoaded", function () {
       mathField.setAttribute('smart-mode', 'on');
       mathField.setAttribute('auto-convert-latex', 'off');
       mathField.setAttribute('inline-shortcut-timeout', '0');
-      mathField.setAttribute('smart-fence', 'on');
       mathField.setAttribute('smart-superscript', 'off');
       mathField.setAttribute('remove-extraneous-parentheses', 'off');
       mathField.style.width = '100%';
@@ -262,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (operation === 'double_integral_polar') {
           integralButton = {
             symbol: '∬ Generate Polar Double Integral',
-            latex: '\\int_{0}^{2\\pi} \\int_{0}^{1} ( r * f(r, \\theta) ) \\, dr\\, d\\theta'
+            latex: '\\int_{0}^{2\\pi} \\int_{0}^{1} ( r \\cdot f(r, \\theta) ) \\, dr\\, d\\theta'
           };
         } else if (operation === 'triple_integral') {
           integralButton = {
@@ -272,12 +271,12 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (operation === 'triple_integral_polar') {
           integralButton = {
             symbol: '∭ Generate Cylindrical Integral',
-            latex: '\\int_{0}^{\\pi} \\int_{0}^{1} \\int_{0}^{1} ( r * f(r, \\theta, z) ) \\, dz\\, dr \\, d\\theta'
+            latex: '\\int_{0}^{\\pi} \\int_{0}^{1} \\int_{0}^{1} ( r \\cdot f(r, \\theta, z) ) \\, dz\\, dr \\, d\\theta'
           };
         } else if (operation === 'triple_integral_cylindrical') {
           integralButton = {
             symbol: '∭ Generate Spherical Integral',
-            latex: '\\int_{0}^{\\pi} \\int_{0}^{\\pi} \\int_{0}^{1} ( \\rho^2 * \\sin(\\phi) * f(\\rho, \\theta, \\phi) ) \\, d\\rho\\, d\\theta\\, d\\phi'
+            latex: '\\int_{0}^{\\pi} \\int_{0}^{\\pi} \\int_{0}^{1} ( \\rho^2 \\cdot \\sin(\\phi) \\cdot f(\\rho, \\theta, \\phi) ) \\, d\\rho\\, d\\theta\\, d\\phi'
           };
         }
 
@@ -702,22 +701,24 @@ document.addEventListener("DOMContentLoaded", function () {
     
     let plainString = latexString;
     
-    // Only handle exponents conversion, leave everything else as-is
+    // Only handle variable exponents, NOT integral symbols or other LaTeX commands
     plainString = plainString
-      // Handle exponents: x^{10} -> x^10, x^{2+3} -> x^(2+3)
-      .replace(/\^{([^}]+)}/g, (match, exponent) => {
+      // Handle variable exponents: x^{10} -> x^10, y^{2+3} -> y^(2+3)
+      // But EXCLUDE cases where it's part of an integral command like \int_{...}^{...}
+      .replace(/([a-zA-Z])\^{([^}]+)}/g, (match, variable, exponent) => {
+        // Only convert if the preceding character is a variable letter
         // If exponent is a single character/number, no parentheses needed
         if (exponent.length === 1 || /^\d+$/.test(exponent)) {
-          return `^${exponent}`;
+          return `${variable}^${exponent}`;
         } else {
           // For complex exponents, add parentheses
-          return `^(${exponent})`;
+          return `${variable}^(${exponent})`;
         }
       })
       // Remove extra spaces and clean up
       .replace(/\s+/g, ' ')
       .trim();
-    
+    console.log("Converted LaTeX to plain notation:", plainString);
     return plainString;
   }
 

@@ -102,7 +102,6 @@ def clean_trig_result(result, debug=False):
         return str(result)
 
 def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
-
     try:
         expression = sympify(expr)
         
