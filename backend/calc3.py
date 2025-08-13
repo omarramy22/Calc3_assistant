@@ -18,6 +18,7 @@ def clean_trig_result(result, debug=False):
         'cos(-pi)': '-1',
         'sin(0)': '0',
         'cos(0)': '1',
+        'log(e)':'1',
         # Handle common variations
         'sin(pi)**2': '0',
         'cos(pi)**2': '1'
@@ -302,23 +303,31 @@ def solve_surface_integral(field, params, surface, bounds, field_vars=("x", "y",
         return f"Error: {str(e)}"
     
 # Directional derivative    
-def solve_directional_derivative(expr: str, variables: list, direction: list) -> str:
+def solve_directional_derivative(expr: str, variables: list, direction: list, point: list = None) -> str:
     try:
         if len(direction) != len(variables):
             return "Error: Direction vector must match the number of variables."
+        
         expression = sympify(expr)
         sym_vars = [symbols(v) for v in variables]
         grad = Matrix([diff(expression, var) for var in sym_vars])
         dir_vector = Matrix(direction)
-
-        # Normalize the direction vector
         magnitude = sqrt(sum(c**2 for c in dir_vector))
         if magnitude == 0:
             return "Error: Direction vector cannot be zero."
+        
         unit_vector = dir_vector / magnitude
-
         directional_derivative = grad.dot(unit_vector)
+        if point is not None and point != []:
+            if len(point) != len(variables):
+                return "Error: Point must have the same dimension as variables."
+            subs_dict = dict(zip(sym_vars, point))
+            evaluated_value = directional_derivative.evalf(subs=subs_dict)
+            evaluated_value = sympify(evaluated_value)
+            return str(evaluated_value)
+        
         return str(directional_derivative)
+    
     except Exception as e:
         return f"Error: {str(e)}"
 def solve_greens_theorem(vector_field: list, region_bounds: list, variables: list):

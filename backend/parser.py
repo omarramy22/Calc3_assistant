@@ -1,10 +1,38 @@
 from sympy import sympify, symbols, latex
 from sympy.parsing.latex import parse_latex
+import re
+
+def clean_power_formatting(expr_str):
+    """
+    Clean up power formatting issues where SymPy returns powers with braces.
+    Converts expressions like x^{10} to x^10 and e^{x} to e^x
+    """
+    if not expr_str:
+        return expr_str
+    
+    expr_str = str(expr_str)  # Ensure it's a string
+    
+    # Fix SymPy's ** notation back to ^ for display
+    expr_str = expr_str.replace('**', '^')
+    
+    # Remove unnecessary braces from simple powers
+    # x^{10} -> x^10, e^{2} -> e^2
+    expr_str = re.sub(r'\^{(\d+)}', r'^\1', expr_str)
+    
+    # Remove unnecessary braces from single variable powers
+    # e^{x} -> e^x, sin^{t} -> sin^t
+    expr_str = re.sub(r'\^{([a-zA-Z])}', r'^\1', expr_str)
+    
+    # For complex expressions, keep parentheses instead of braces
+    # e^{x*y} -> e^(x*y), log^{x+1} -> log^(x+1)
+    expr_str = re.sub(r'\^{([^}]+)}', r'^(\1)', expr_str)
+    
+    return expr_str
 
 def parse_expression(expr):
     """
     Parse any mathematical expression (LaTeX or regular) using SymPy.
-    Returns a SymPy expression that can be converted to string.
+    Returns a cleaned string representation of the SymPy expression.
     """
     if not expr or not expr.strip():
         return None
@@ -21,7 +49,9 @@ def parse_expression(expr):
         # Try LaTeX parsing first if it looks like LaTeX
         if '\\' in expr:
             try:
-                return parse_latex(expr)
+                parsed_expr = parse_latex(expr)
+                result = str(parsed_expr)
+                return clean_power_formatting(result)
             except:
                 # If parse_latex fails, do manual conversion
                 expr = expr.replace('\\sin', 'sin')
@@ -35,20 +65,26 @@ def parse_expression(expr):
                 expr = expr.replace('\\pi', 'pi')
                 expr = expr.replace('\\cdot', '*')
                 expr = expr.replace('^', '**')
-                return sympify(expr)
+                parsed_expr = sympify(expr)
+                result = str(parsed_expr)
+                return clean_power_formatting(result)
         else:
             # Handle common patterns and use sympify
             expr = expr.replace('^', '**')  # Convert powers
-            # Remove curly braces in exponents: x^{2} -> x^2
-            return sympify(expr)
+            parsed_expr = sympify(expr)
+            result = str(parsed_expr)
+            return clean_power_formatting(result)
     except:
         try:
             # Fallback: try sympify with power conversion
             expr = expr.replace('^', '**')
-            return sympify(expr)
+            parsed_expr = sympify(expr)
+            result = str(parsed_expr)
+            return clean_power_formatting(result)
         except:
-            # Last resort: return as symbol
-            return symbols(expr)
+            # Last resort: return as symbol with cleanup
+            result = str(symbols(expr))
+            return clean_power_formatting(result)
 
 def parse_integral_latex(latex_expr):
     """
@@ -112,7 +148,8 @@ def parse_vector(vector_str):
         comp = comp.strip()
         if comp:
             parsed = parse_expression(comp)
-            components.append(str(parsed) if parsed else comp)
+            # The parse_expression already applies clean_power_formatting
+            components.append(parsed if parsed else comp)
     
     return components
 
@@ -171,3 +208,12 @@ def parse_integral_limits(limits_str, variables):
             limits.append((var, '0', '1'))
     
     return limits
+
+def format_expression_output(expr):
+    """
+    Global function to format any expression output with proper power notation.
+    Can be used by calc3.py or other modules for consistent formatting.
+    """
+    if expr is None:
+        return None
+    return clean_power_formatting(str(expr))

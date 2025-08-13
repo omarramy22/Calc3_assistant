@@ -36,7 +36,7 @@ def calculate():
         
         print(f"Operation: {operation}")
         print(f"Request data: {data}")
-        
+
         if operation == "partial_derivative":
             function_str = data.get("function", "")
             variables_str = data.get("variables", "")
@@ -45,7 +45,6 @@ def calculate():
             function_expr = parse_expression(function_str)
             variables = parse_vector(variables_str)
             order = 1
-            print(function_expr, variables, order)
             return jsonify({
                 "result": solve_partial_derivative(str(function_expr), variables, order)
             })
@@ -234,9 +233,9 @@ def calculate():
             point = parse_vector(point_str)
             
             variables = ['x', 'y', 'z'][:len(direction)]
-            
+
             return jsonify({
-                "result": solve_directional_derivative(str(function_expr), variables, direction)
+                "result": solve_directional_derivative(str(function_expr), variables, direction, point)
             })
             
         elif operation == "greens_theorem":

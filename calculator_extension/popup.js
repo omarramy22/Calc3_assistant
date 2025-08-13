@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
       fields: [
         { id: 'function', label: 'Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2' },
         { id: 'direction', label: 'Direction Vector', placeholder: '1, 1, 1' },
-        { id: 'point', label: 'Point (x,y,z)', placeholder: '1, 2, 3' }
+        { id: 'point', label: 'Point (x,y,z) - Optional', placeholder: '1, 2, 3' }
       ]
     },
     greens_theorem: {
@@ -212,7 +212,6 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.setItem(`calc3_${operation}_${field.id}`, currentValue);
           }
         } else {
-          // Normal handling for other fields
           if (currentValue === '') {
             this.setValue(field.placeholder);
             this.style.color = '#999';
@@ -484,13 +483,40 @@ document.addEventListener("DOMContentLoaded", function () {
             // Clean up LaTeX formatting for better display
             let cleanSol = sol.toString();
             cleanSol = cleanSol
-              .replace(/\*\*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits} for multi-digit exponents
-              .replace(/\*\*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
+              // Step 1: Convert mathematical functions first
+              .replace(/\bexp\(([^)]+)\)/g, 'e^{$1}')  // Convert exp(x) to e^{x}
               .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
               .replace(/\bpi\b/g, '\\pi')  // Convert pi to \pi
-              .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
-              .replace(/([a-zA-Z0-9}])\*(?=[a-zA-Z])/g, '$1')  //remove * between variables
-              .replace(/\$\$/g, '');  // Remove $$ delimiters if present
+              .replace(/\blog\b/g, 'ln')  // Convert log to ln
+              
+              // Step 2: Handle e** specifically (before general ** handling)
+              .replace(/\be\s*\*\*\s*(\w+)/g, 'e^{$1}')  // Convert e**x to e^{x}
+              .replace(/\be\s*\*\*\s*\(([^)]+)\)/g, 'e^{$1}')  // Convert e**(expr) to e^{expr}
+              
+              // Step 3: Handle remaining powers
+              .replace(/\*\*\s*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits}
+              .replace(/\*\*\s*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
+              .replace(/\*\*\s*([a-zA-Z])/g, '^{$1}')  // Convert **variable to ^{variable}
+              
+              // Step 4: Remove ln(e) completely (erase it entirely)
+              .replace(/\s*\*\s*\bln\(e\)\s*/gi, '')  // Remove * ln(e) *
+              .replace(/\bln\(e\)\s*\*\s*/gi, '')  // Remove ln(e) *
+              .replace(/\s*\*\s*\bln\(e\)(?=\/)/gi, '')  // Remove * ln(e) before division
+              .replace(/\s*\*\s*\bln\(e\)/gi, '')  // Remove * ln(e)
+              .replace(/\bln\(e\)/gi, '')  // Remove standalone ln(e)
+              
+              // Step 5: Clean up multiplication by 1 only
+              .replace(/\s*\*\s*1(?!\d)/g, '')  // Remove * 1 (but not *10, *11, etc.)
+              .replace(/(?<!\d)1\s*\*\s*/g, '')  // Remove 1 * (but not 11*, 21*, etc.)
+              
+              // Step 6: Clean up addition/subtraction by 0
+              .replace(/\s*\+\s*0(?!\d)/g, '')  // Remove + 0
+              .replace(/(?<!\d)0\s*\+\s*/g, '')  // Remove 0 +
+              
+              // Step 7: Final cleanup
+              .replace(/\s+/g, ' ')  // Clean up multiple spaces
+              .replace(/^\s+|\s+$/g, '')  // Trim
+              .replace(/\$\$/g, '');  // Remove $$ delimiters
             
             mathResult.setValue(cleanSol);
           }
@@ -572,13 +598,40 @@ document.addEventListener("DOMContentLoaded", function () {
           // Clean up LaTeX formatting for better display
           let cleanSol = sol.toString();
           cleanSol = cleanSol
-            .replace(/\*\*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits} for multi-digit exponents
-            .replace(/\*\*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
+            // Step 1: Convert mathematical functions first
+            .replace(/\bexp\(([^)]+)\)/g, 'e^{$1}')  // Convert exp(x) to e^{x}
             .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
             .replace(/\bpi\b/g, '\\pi')  // Convert pi to \pi
-            .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
-            .replace(/([a-zA-Z0-9}])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables
-            .replace(/\$\$/g, '');  // Remove $$ delimiters if present
+            .replace(/\blog\b/g, 'ln')  // Convert log to ln
+            
+            // Step 2: Handle e** specifically (before general ** handling)
+            .replace(/\be\s*\*\*\s*(\w+)/g, 'e^{$1}')  // Convert e**x to e^{x}
+            .replace(/\be\s*\*\*\s*\(([^)]+)\)/g, 'e^{$1}')  // Convert e**(expr) to e^{expr}
+            
+            // Step 3: Handle remaining powers
+            .replace(/\*\*\s*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits}
+            .replace(/\*\*\s*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
+            .replace(/\*\*\s*([a-zA-Z])/g, '^{$1}')  // Convert **variable to ^{variable}
+            
+            // Step 4: Remove ln(e) completely (erase it entirely)
+            .replace(/\s*\*\s*\bln\(e\)\s*/gi, '')  // Remove * ln(e) *
+            .replace(/\bln\(e\)\s*\*\s*/gi, '')  // Remove ln(e) *
+            .replace(/\s*\*\s*\bln\(e\)(?=\/)/gi, '')  // Remove * ln(e) before division
+            .replace(/\s*\*\s*\bln\(e\)/gi, '')  // Remove * ln(e)
+            .replace(/\bln\(e\)/gi, '')  // Remove standalone ln(e)
+            
+            // Step 5: Clean up multiplication by 1 only
+            .replace(/\s*\*\s*1(?!\d)/g, '')  // Remove * 1 (but not *10, *11, etc.)
+            .replace(/(?<!\d)1\s*\*\s*/g, '')  // Remove 1 * (but not 11*, 21*, etc.)
+            
+            // Step 6: Clean up addition/subtraction by 0
+            .replace(/\s*\+\s*0(?!\d)/g, '')  // Remove + 0
+            .replace(/(?<!\d)0\s*\+\s*/g, '')  // Remove 0 +
+            
+            // Step 7: Final cleanup
+            .replace(/\s+/g, ' ')  // Clean up multiple spaces
+            .replace(/^\s+|\s+$/g, '')  // Trim
+            .replace(/\$\$/g, '');  // Remove $$ delimiters
           
           mathResult.setValue(cleanSol);
           
@@ -615,13 +668,40 @@ document.addEventListener("DOMContentLoaded", function () {
         
         // Convert Python-style expressions to proper LaTeX more carefully
         cleanResult = cleanResult
-          .replace(/\*\*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits} for multi-digit exponents
-          .replace(/\*\*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
+          // Step 1: Convert mathematical functions first
+          .replace(/\bexp\(([^)]+)\)/g, 'e^{$1}')  // Convert exp(x) to e^{x}
           .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')  // Convert sqrt(expr) to \sqrt{expr}
           .replace(/\bpi\b/g, '\\pi')  // Convert pi to \pi
-          .replace(/\*(?=[a-zA-Z])/g, '')  // Remove * before variables (x*y -> xy)
-          .replace(/([a-zA-Z0-9}])\*(?=[a-zA-Z])/g, '$1')  // Remove * between variables/numbers and variables
-          .replace(/\$\$/g, '');  // Remove $$ delimiters if present
+          .replace(/\blog\b/g, 'ln')  // Convert log to ln
+          
+          // Step 2: Handle e** specifically (before general ** handling)
+          .replace(/\be\s*\*\*\s*(\w+)/g, 'e^{$1}')  // Convert e**x to e^{x}
+          .replace(/\be\s*\*\*\s*\(([^)]+)\)/g, 'e^{$1}')  // Convert e**(expr) to e^{expr}
+          
+          // Step 3: Handle remaining powers
+          .replace(/\*\*\s*(\d+)/g, '^{$1}')  // Convert **digits to ^{digits}
+          .replace(/\*\*\s*\(([^)]+)\)/g, '^{$1}')  // Convert **(expr) to ^{expr}
+          .replace(/\*\*\s*([a-zA-Z])/g, '^{$1}')  // Convert **variable to ^{variable}
+          
+          // Step 4: Remove ln(e) completely (erase it entirely)
+          .replace(/\s*\*\s*\bln\(e\)\s*/gi, '')  // Remove * ln(e) *
+          .replace(/\bln\(e\)\s*\*\s*/gi, '')  // Remove ln(e) *
+          .replace(/\s*\*\s*\bln\(e\)(?=\/)/gi, '')  // Remove * ln(e) before division
+          .replace(/\s*\*\s*\bln\(e\)/gi, '')  // Remove * ln(e)
+          .replace(/\bln\(e\)/gi, '')  // Remove standalone ln(e)
+          
+          // Step 5: Clean up multiplication by 1 only
+          .replace(/\s*\*\s*1(?!\d)/g, '')  // Remove * 1 (but not *10, *11, etc.)
+          .replace(/(?<!\d)1\s*\*\s*/g, '')  // Remove 1 * (but not 11*, 21*, etc.)
+          
+          // Step 6: Clean up addition/subtraction by 0
+          .replace(/\s*\+\s*0(?!\d)/g, '')  // Remove + 0
+          .replace(/(?<!\d)0\s*\+\s*/g, '')  // Remove 0 +
+          
+          // Step 7: Final cleanup
+          .replace(/\s+/g, ' ')  // Clean up multiple spaces
+          .replace(/^\s+|\s+$/g, '')  // Trim
+          .replace(/\$\$/g, '');  // Remove $$ delimiters
         
         mathResult.setValue(cleanResult);
       }
@@ -746,7 +826,7 @@ document.addEventListener("DOMContentLoaded", function () {
           rawValue = mathField.getValue();
           
           // Convert LaTeX to plain mathematical notation
-          value = convertLatexToPlain(rawValue);
+          value = rawValue;
         } catch (e) {
           value = mathField.getValue();
         }
@@ -782,6 +862,11 @@ document.addEventListener("DOMContentLoaded", function () {
       missingFields = config.fields.filter(field => 
         !inputData[field.id] && field.id !== 'parameter'
       );
+    } else if (selectedOperation === 'directional_derivative') {
+      // For directional derivative, point is optional - only function and direction are required
+      missingFields = config.fields.filter(field => 
+        !inputData[field.id] && field.id !== 'point'
+      );
     } else {
       // For other operations, all fields are required
       missingFields = config.fields.filter(field => !inputData[field.id]);
@@ -794,7 +879,7 @@ document.addEventListener("DOMContentLoaded", function () {
     result.textContent = "Calculating...";
 
     try {
-      const response = await fetch("https://course-calculator.onrender.com/calculate", {
+      const response = await fetch("http://localhost:5000/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inputData),
