@@ -1,4 +1,4 @@
-from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, simplify, trigsimp
+from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, simplify, trigsimp, Piecewise
 def clean_trig_result(result, debug=False):
     """Clean up mathematical expressions without forcing numeric evaluation"""
     from sympy import log, E, exp, ln
@@ -38,6 +38,34 @@ def clean_trig_result(result, debug=False):
     except:
         pass
     
+    # Handle piecewise functions - extract the most likely case
+    try:
+        if isinstance(result, Piecewise):
+            if debug:
+                print(f"DEBUG: Found piecewise function: {result}")
+            # For piecewise functions, try to get the first valid expression
+            # This works for cases like Piecewise((e - 1, (e > 0) & Ne(e, 1)), (1, True))
+            # where the first case is the correct one for normal mathematical constants
+            for expr, condition in result.args:
+                if debug:
+                    print(f"DEBUG: Piecewise case: expr={expr}, condition={condition}")
+                # Take the first non-trivial expression
+                if expr != 0 and expr != 1:
+                    result = expr
+                    if debug:
+                        print(f"DEBUG: Selected piecewise expression: {result}")
+                    break
+            else:
+                # If no non-trivial expression found, take the first one
+                if result.args:
+                    result = result.args[0][0]
+                    if debug:
+                        print(f"DEBUG: Selected first piecewise expression: {result}")
+    except Exception as e:
+        if debug:
+            print(f"DEBUG: Failed piecewise handling: {e}")
+        pass
+
     # Convert to string for pattern-based cleanup
     result_str = str(result)
     if debug:
@@ -198,7 +226,6 @@ def solve_multiple_integral(expr: str, limits: list) -> str:
         
         # Final simplification
         result = expression.simplify()
-        
         # Clean up log(e) and other expressions
         result = clean_trig_result(result)
         
@@ -210,7 +237,7 @@ def solve_multiple_integral(expr: str, limits: list) -> str:
         import traceback
         traceback.print_exc()
         return f"Error: {str(e)}"     
-
+print(solve_multiple_integral("e**x", [("x", "0", "1"), ("y", "0", "1")]))  
 # Divergence
 def solve_divergence(vector_field: list, variables: list) -> str:
     try:
