@@ -10,12 +10,13 @@ document.addEventListener("DOMContentLoaded", function () {
     partial_derivative: {
       fields: [
         { id: 'function', label: 'Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2 + x*y' },
-        { id: 'variables', label: 'differentiation Variables (comma-separated)', placeholder: 'x, y' }
+        { id: 'variables', label: 'Variables to differentiate wrt (comma-separated)', placeholder: 'x, x, y'}
       ]
     },
     gradient: {
       fields: [
-        { id: 'function', label: 'Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2' }
+        { id: 'function', label: 'Function f(x,y,z)', placeholder: 'x^2 + y^2 + z^2' },
+        { id: 'point', label: 'Point (x,y,z) - Optional', placeholder: '1, 2, 3' }
       ]
     },
     double_integral: {
@@ -862,9 +863,9 @@ document.addEventListener("DOMContentLoaded", function () {
       missingFields = config.fields.filter(field => 
         !inputData[field.id] && field.id !== 'parameter'
       );
-    } else if (selectedOperation === 'directional_derivative') {
-      // For directional derivative, point is optional - only function and direction are required
-      missingFields = config.fields.filter(field => 
+    } else if (selectedOperation === 'directional_derivative' || selectedOperation === 'gradient') {
+      // For directional derivative and gradient, point is optional - only function and direction are required
+      missingFields = config.fields.filter(field =>
         !inputData[field.id] && field.id !== 'point'
       );
     } else {

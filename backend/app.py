@@ -40,7 +40,8 @@ def calculate():
         if operation == "partial_derivative":
             function_str = data.get("function", "")
             variables_str = data.get("variables", "")
-            
+            point_str = data.get("point", "")
+            print(function_str, variables_str, point_str)
             # Parse using SymPy
             function_expr = parse_expression(function_str)
             variables = parse_vector(variables_str)
@@ -129,12 +130,14 @@ def calculate():
         elif operation == "gradient":
             function_str = data.get("function", "")
             variables_str = data.get("variables", "x,y,z")
+            point_str = data.get("point", "")
             
             function_expr = parse_expression(function_str)
             variables = parse_vector(variables_str)
+            point = parse_vector(point_str) if point_str else None
             
             return jsonify({
-                "result": solve_gradient(str(function_expr), variables)
+                "result": solve_gradient(str(function_expr), variables, point)
             })
             
         elif operation == "divergence":
@@ -230,10 +233,9 @@ def calculate():
             
             function_expr = parse_expression(function_str)
             direction = parse_vector(direction_str)
-            point = parse_vector(point_str)
+            point = parse_vector(point_str) if point_str else None
             
             variables = ['x', 'y', 'z'][:len(direction)]
-
 
             return jsonify({
                 "result": solve_directional_derivative(str(function_expr), variables, direction, point)

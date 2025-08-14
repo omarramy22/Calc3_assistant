@@ -158,11 +158,15 @@ def solve_arc_length(exprs: list, param: str, a: str, b: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-def solve_gradient(expr: str, variables: list) -> list[str]:
+def solve_gradient(expr: str, variables: list, point: list = None) -> list[str]:
     try:
         expression = sympify(expr)
         sym_vars = [symbols(v) for v in variables]
         grad = [clean_trig_result(diff(expression, var)) for var in sym_vars]
+        if point is not None:
+            # Evaluate the gradient at the given point
+            point_values = {sym_vars[i]: point[i] for i in range(len(point))}
+            grad = [g.subs(point_values) for g in grad]
         return [str(g) for g in grad]
     except Exception as e:
         return f"Error: {str(e)}"
@@ -328,7 +332,7 @@ def solve_directional_derivative(expr: str, variables: list, direction: list, po
         
         unit_vector = dir_vector / magnitude
         directional_derivative = grad.dot(unit_vector)
-        if point is not None and point != []:
+        if point is not None:
             if len(point) != len(variables):
                 return "Error: Point must have the same dimension as variables."
             subs_dict = dict(zip(sym_vars, point))
