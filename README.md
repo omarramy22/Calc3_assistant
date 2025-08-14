@@ -1,6 +1,6 @@
 # 🧮 AUC Calculator
 
-A comprehensive mathematical calculator designed for AUC students, featuring advanced calculus operations, vector calculus, and LaTeX expression parsing.
+A comprehensive mathematical calculator designed for AUC students, featuring advanced calculus operations, vector calculus, and LaTeX expression parsing with exact symbolic computation.
 
 ## 📖 Table of Contents
 - [Features](#-features)
@@ -10,7 +10,6 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 - [Project Structure](#-project-structure)
 - [API Documentation](#-api-documentation)
 - [Development](#-development)
-- [Testing](#-testing)
 - [Contributing](#-contributing)
 - [License](#-license)
 
@@ -18,26 +17,27 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 ### 🔢 Core Mathematical Operations
 - **Partial Derivatives** - Calculate partial derivatives of multivariable functions
-- **Arc Length** - Compute arc length of parametric curves
+- **Arc Length** - Compute arc length of parametric curves  
 - **Gradient** - Find gradient vectors of scalar fields
 - **Multiple Integrals** - Evaluate double and triple integrals
-- **Polar Integrals** - Integration in polar coordinate systems
-
-### 🌊 Vector Calculus
 - **Divergence** - Calculate divergence of vector fields
 - **Curl** - Compute curl of 3D vector fields
+
+### 🌊 Vector Calculus
 - **Line Integrals** - Evaluate line integrals over curves
 - **Surface Integrals** - Calculate surface integrals over parametric surfaces
 - **Directional Derivatives** - Find derivatives in specified directions
-
-### 📐 Advanced Topics
 - **Green's Theorem** - 2D circulation and flux calculations
 - **Stokes' Theorem** - Relating surface and line integrals
-- **Lagrange Multipliers** - Constrained optimization problems
+
+### 📐 Advanced Topics
+- **Lagrange Multipliers** - Constrained optimization problems with exact symbolic solutions
 
 ### 🎨 User Experience
-- **LaTeX Input Support** - Parse complex mathematical expressions like `\sin\left(t\right)`
-- **Real-time Calculation** - Instant results as you type
+- **LaTeX Input Support** - Parse complex mathematical expressions with robust preprocessing
+- **Real-time Calculation** - Instant results with MathLive rendering
+- **Exact Symbolic Results** - Preserves square roots, fractions, and exact forms
+- **Expression Cleanup** - Automatically removes `log(e)` terms and simplifies expressions
 - **Modern Interface** - Beautiful gradient backgrounds and smooth animations
 - **Error Handling** - Graceful error messages and validation
 - **Responsive Design** - Works on desktop and mobile devices
@@ -45,10 +45,10 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 ### 🔧 Technical Features
 - **Single API Endpoint** - Unified `/calculate` endpoint handling all operations
-- **Advanced Parsing** - Multi-tier parsing system (latex2sympy → SymPy → fallbacks)
-- **Edge Case Handling** - Handles malformed LaTeX like `t^{}`
-- **Comprehensive Functions** - All trigonometric, logarithmic, and exponential functions
-- **Modern UI** - Gradient backgrounds, smooth animations, and glass-morphism effects
+- **Advanced LaTeX Parsing** - Handles malformed LaTeX like `\sqrt2` → `\sqrt{2}`
+- **Symbolic Mathematics** - Built on SymPy with custom expression cleanup
+- **Expression Preprocessing** - Fixes common LaTeX formatting issues automatically
+- **Exact Computation** - Preserves exact forms without numeric approximation
 - **Cross-browser Support** - Chrome and Firefox extension compatibility
 
 ## 🖼️ Screenshots
@@ -66,7 +66,7 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 ## 🚀 Installation
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.8+ (tested with Python 3.13.3)
 - Modern web browser (Chrome, Firefox, Edge)
 
 ### Quick Start
@@ -78,16 +78,15 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 2. **Install Python dependencies**
    ```bash
-   pip install flask flask-cors sympy latex2sympy2 antlr4-python3-runtime
+   pip install -r requirements.txt
+   ```
+   
+   *Or manually install:*
+   ```bash
+   pip install flask flask-cors sympy gunicorn antlr4-python3-runtime
    ```
 
 3. **Start the server**
-   - **Using the batch file (Windows):**
-   ```bash
-   start_flask.bat
-   ```
-   
-   - **Or manually:**
    ```bash
    cd backend
    python app.py
@@ -116,30 +115,43 @@ A comprehensive mathematical calculator designed for AUC students, featuring adv
 
 ### Supported LaTeX Syntax
 ```latex
-2t                          # Simple expressions
-\sin\left(t\right)         # Trigonometric functions
+# Basic expressions
+2*t                         # Simple expressions
+x^2 + y                     # Powers and variables
+
+# Functions (auto-preprocessed)
+\sqrt2 → \sqrt{2}          # Square roots
+\sinx → \sin{x}            # Trigonometric functions  
+\ln2 → \ln{2}              # Logarithms
+
+# Complex expressions
 \frac{x^2}{2}              # Fractions
-\sqrt{x + y}               # Square roots
+\sqrt{x + y}               # Square roots with expressions
 \int_{0}^{1} x dx          # Integrals
 ```
+
+### Expression Features
+- **Automatic cleanup**: `log(e)` terms are removed automatically
+- **Exact results**: Preserves `sqrt(2)`, `pi/4`, exact fractions
+- **LaTeX preprocessing**: Fixes `\sqrt2` → `\sqrt{2}` automatically
+- **Error handling**: Graceful parsing of malformed expressions
 
 ### API Endpoints
 ```
 POST /calculate
 # Single endpoint that handles all operations based on "operation" parameter:
-# - partial_derivative
-# - double_integral  
-# - double_integral_polar
-# - arc_length
-# - gradient
-# - divergence
-# - curl
-# - line_integral
-# - surface_integral
-# - directional_derivative
-# - greens_theorem
-# - stokes_theorem
-# - lagrange_multipliers
+# - partial_derivative      # ∂f/∂x calculations
+# - multiple_integral       # Double/triple integrals
+# - arc_length             # Parametric curve length
+# - gradient               # ∇f calculations  
+# - divergence             # ∇·F calculations
+# - curl                   # ∇×F calculations
+# - line_integral          # ∫F·dr along curves
+# - surface_integral       # ∫∫F·dS over surfaces
+# - directional_derivative # D_uF at points
+# - greens_theorem         # 2D circulation/flux
+# - stokes_theorem         # 3D circulation
+# - lagrange_multipliers   # Constrained optimization
 ```
 
 ## 📁 Project Structure
@@ -149,21 +161,20 @@ AUC_calculator/
 ├── 🌐 Frontend
 │   └── calculator_extension/     # Browser extension
 │       ├── popup.html           # Main interface
-│       ├── popup.js             # Frontend logic  
+│       ├── popup.js             # Frontend logic with MathLive
 │       ├── styles.css           # Modern styling with gradients
 │       ├── manifest.json        # Extension configuration
 │       └── icons/               # Extension icons
 │   
-├── ⚙️ Backend
-│   ├── app.py                   # Flask server & single API endpoint
-│   ├── calc3.py                 # Mathematical computation functions
-│   ├── parser.py                # LaTeX parsing engine
-│   ├── static/                  # Static web files
-│   │   └── index.html          # Web interface
+├── ⚙️ Backend  
+│   ├── app.py                   # Flask server & unified API endpoint
+│   ├── calc3.py                 # Mathematical computation with exact symbolic results
+│   ├── parser.py                # LaTeX parsing with preprocessing
+│   ├── requirements.txt         # Python dependencies
 │   └── __pycache__/            # Python cache files
 │
-└── 📋 Configuration
-    ├── start_flask.bat          # Windows startup script
+└── 📋 Documentation
+    ├── firefox_package.zip      # Firefox extension package
     └── README.md                # This documentation
 ```
 
@@ -180,14 +191,14 @@ POST /calculate
 }
 ```
 
-### Double Integrals
+### Multiple Integrals
 ```javascript
 POST /calculate
 {
-    "operation": "double_integral",
-    "function": "x*y",
+    "operation": "multiple_integral",
+    "function": "x*y", 
     "variables": "x,y",
-    "limits": "0,1,0,2"
+    "limits": "0,1,0,2"  // x: 0→1, y: 0→2
 }
 ```
 
@@ -206,15 +217,11 @@ POST /calculate
 ### Setting Up Development Environment
 1. **Install dependencies**
    ```bash
-   pip install flask flask-cors sympy latex2sympy2 antlr4-python3-runtime
+   pip install -r requirements.txt
    ```
 
 2. **Start development server**
    ```bash
-   # Using batch file
-   start_flask.bat
-   
-   # Or manually
    cd backend
    python app.py
    ```
@@ -224,40 +231,25 @@ POST /calculate
    - Browser extension: Load `calculator_extension` folder
 
 ### Key Components
-- **Parser System**: Multi-tier LaTeX parsing for robust expression handling
-- **Mathematical Engine**: Built on SymPy for accurate symbolic computation
-- **Web API**: RESTful Flask endpoints for all operations
+- **LaTeX Preprocessing**: Automatic fixing of common LaTeX formatting issues
+- **Symbolic Mathematics**: Built on SymPy with custom expression cleanup functions
+- **Expression Cleanup**: Removes `log(e)` terms and preserves exact symbolic forms
+- **Unified API**: Single `/calculate` endpoint handling all mathematical operations
 - **Frontend**: Vanilla JavaScript with MathLive for LaTeX rendering
 
+### Mathematical Engine Features
+- **Exact Computation**: No forced numeric approximation
+- **Automatic Simplification**: Cleans up trigonometric and logarithmic expressions
+- **Robust Parsing**: Handles malformed LaTeX with preprocessing
+- **Comprehensive Coverage**: All vector calculus and multivariable calculus operations
+
 ### Adding New Features
-1. Add mathematical function to `calc3.py`
+1. Add mathematical function to `calc3.py` with `clean_trig_result()` call
 2. Update the operation handling in `app.py` 
 3. Add frontend controls in `popup.html/popup.js`
-4. Test functionality manually in both web and extension interfaces
+4. Test functionality in both web and extension interfaces
 
-## 🧪 Testing
-
-### Manual Testing
-1. **Start the server**: 
-   ```bash
-   start_flask.bat
-   ```
-   
-2. **Open browser**: Navigate to `http://localhost:5000`
-
-3. **Test mathematical operations**:
-   - Try basic expressions: `2t`, `x^2`
-   - Test trigonometric functions: `\sin\left(t\right)`, `\cos\left(x\right)`
-   - Verify edge cases: `t^{}`, empty inputs
-   - Test complex expressions: `\frac{x^2}{2} + \sqrt{y}`
-
-### Browser Extension Testing
-1. Load the extension in Chrome/Firefox
-2. Click the calculator icon in the toolbar
-3. Test all mathematical operations in the popup
-4. Verify LaTeX rendering works correctly
-
-## 🤝 Contributing
+##  Contributing
 
 1. **Fork the repository**
 2. **Create feature branch**
@@ -266,8 +258,8 @@ POST /calculate
    ```
 3. **Make changes and test**
    ```bash
-   # Start server and test manually
-   start_flask.bat
+   cd backend
+   python app.py
    # Then open http://localhost:5000
    ```
 4. **Commit changes**
@@ -281,11 +273,12 @@ POST /calculate
 6. **Open Pull Request**
 
 ### Development Guidelines
-- Write clear, documented code
-- Follow existing code style and patterns
+- Write clear, documented code following existing patterns
+- Add `clean_trig_result()` calls to new mathematical functions
+- Test LaTeX parsing with edge cases like `\sqrt2`, `\sinx`
+- Ensure exact symbolic computation is preserved
 - Update documentation when adding features
-- Test LaTeX parsing thoroughly with edge cases
-- Ensure both web interface and browser extension work correctly
+- Test both web interface and browser extension
 
 ## 📄 License
 
@@ -298,9 +291,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built for AUC (American University in Cairo) students
-- Powered by SymPy for mathematical computations
-- Uses MathLive for LaTeX rendering
-- LaTeX parsing via latex2sympy2
+- Powered by SymPy for exact symbolic mathematical computations
+- Uses MathLive for beautiful LaTeX rendering
+- Custom LaTeX preprocessing for robust expression parsing
 
 ## 📞 Support
 
@@ -311,4 +304,4 @@ For questions, issues, or suggestions:
 
 ---
 
-**⭐ Star this repository if it helped you with your calculus homework!** 
+**⭐ Star this repository if it helped you with your calculus homework!**
