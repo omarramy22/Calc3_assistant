@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sympy import sympify
+from sympy.parsing.latex import parse_latex
 
 from calc3 import (
     solve_partial_derivative,
@@ -22,7 +23,9 @@ from parser import (
     parse_integral_latex,
     parse_vector,
     parse_limits,
-    parse_integral_limits
+    parse_integral_limits,
+    extract_variables_from_string,
+    preprocess_constraint
 )
 
 app = Flask(__name__)
@@ -40,8 +43,7 @@ def calculate():
         if operation == "partial_derivative":
             function_str = data.get("function", "")
             variables_str = data.get("variables", "")
-            point_str = data.get("point", "")
-            print(function_str, variables_str, point_str)
+
             # Parse using SymPy
             function_expr = parse_expression(function_str)
             variables = parse_vector(variables_str)
@@ -327,18 +329,24 @@ def calculate():
             function_str = data.get("function", "")
             constraint_str = data.get("constraint", "")
             
-            function_expr = parse_expression(function_str)
-            constraint_expr = parse_expression(constraint_str)
+            constraint_str = preprocess_constraint(constraint_str)
             
             # Extract variables from both expressions
-            all_symbols = function_expr.free_symbols.union(constraint_expr.free_symbols)
-            excluded = {'pi', 'e', 'I', 'lambda', 'mu', 'Lambda', 'Mu', 'E'}
-            variables = [str(s) for s in all_symbols if str(s) not in excluded and len(str(s)) <= 3]
-            variables.sort()
+            func_vars = extract_variables_from_string(function_str)
+            constraint_vars = extract_variables_from_string(constraint_str)
+            all_vars = func_vars.union(constraint_vars)
+            
+            # Convert to sorted list
+            variables = sorted(list(all_vars))
             
             if not variables:
                 return jsonify({"error": "Could not extract variables from the function and constraint."}), 400
             
+            # Parse expressions for clean formatting
+            function_expr = parse_expression(function_str)
+            constraint_expr = parse_expression(constraint_str)
+            
+
             return jsonify({
                 "result": solve_lagrange_multipliers(str(function_expr), str(constraint_expr), variables)
             })
