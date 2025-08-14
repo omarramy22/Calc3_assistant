@@ -49,6 +49,8 @@ def parse_expression(expr):
         # Try LaTeX parsing first if it looks like LaTeX
         if '\\' in expr:
             try:
+                # Preprocess LaTeX to fix common formatting issues
+                expr = preprocess_latex(expr)
                 parsed_expr = parse_latex(expr)
                 result = str(parsed_expr)
                 return clean_power_formatting(result)
@@ -86,6 +88,27 @@ def parse_expression(expr):
             result = str(symbols(expr))
             return clean_power_formatting(result)
 
+def preprocess_latex(latex_expr):
+    """
+    Preprocess LaTeX expressions to fix common formatting issues before parsing.
+    """
+    if not latex_expr:
+        return latex_expr
+    
+    # Fix square root without braces: \sqrt2 -> \sqrt{2}
+    latex_expr = re.sub(r'\\sqrt(\d+)', r'\\sqrt{\1}', latex_expr)
+    
+    # Fix square root with variables without braces: \sqrtx -> \sqrt{x}
+    latex_expr = re.sub(r'\\sqrt([a-zA-Z])', r'\\sqrt{\1}', latex_expr)
+    
+    # Fix other functions without braces like \sin2 -> \sin{2}, \cos3 -> \cos{3}
+    latex_expr = re.sub(r'\\(sin|cos|tan|sec|csc|cot|log|ln|exp)(\d+)', r'\\\1{\2}', latex_expr)
+    
+    # Fix function with variables without braces: \sinx -> \sin{x}
+    latex_expr = re.sub(r'\\(sin|cos|tan|sec|csc|cot|log|ln|exp)([a-zA-Z])', r'\\\1{\2}', latex_expr)
+    
+    return latex_expr
+
 def parse_integral_latex(latex_expr):
     """
     Parse LaTeX integral expressions and extract integrand and limits.
@@ -101,6 +124,9 @@ def parse_integral_latex(latex_expr):
         latex_expr = latex_expr[2:-2].strip()
     elif latex_expr.startswith('$') and latex_expr.endswith('$'):
         latex_expr = latex_expr[1:-1].strip()
+    
+    # Preprocess LaTeX to fix common formatting issues
+    latex_expr = preprocess_latex(latex_expr)
     
     try:
         # Parse the LaTeX integral using SymPy's parse_latex

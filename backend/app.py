@@ -234,6 +234,7 @@ def calculate():
             
             variables = ['x', 'y', 'z'][:len(direction)]
 
+
             return jsonify({
                 "result": solve_directional_derivative(str(function_expr), variables, direction, point)
             })

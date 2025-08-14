@@ -1,15 +1,57 @@
 from sympy import symbols, Matrix, diff, sympify, integrate, sqrt, solve, Eq, Integral, sin, cos, pi, simplify, trigsimp
 def clean_trig_result(result, debug=False):
-    """Clean up trigonometric expressions by forcing evaluation"""
-    from sympy import N, nsimplify
+    """Clean up mathematical expressions without forcing numeric evaluation"""
+    from sympy import log, E, exp, ln
+    if debug:
+        print(f"DEBUG: Original result: {result}")
     
-    # Convert to string to handle symbolic expressions
+    # First, apply symbolic substitutions to preserve exact forms
+    try:
+        # Replace log(e) with 1 symbolically
+        result = result.subs(log(E), 1)
+        if debug:
+            print(f"DEBUG: After log(E) -> 1 substitution: {result}")
+            
+        # Also handle log(exp(1)) -> 1
+        result = result.subs(log(exp(1)), 1)
+        if debug:
+            print(f"DEBUG: After log(exp(1)) -> 1 substitution: {result}")
+            
+    except Exception as e:
+        if debug:
+            print(f"DEBUG: Failed symbolic substitution: {e}")
+        pass
+    
+    # Apply trigonometric simplification (preserves exact forms)
+    try:
+        result = trigsimp(result)
+        if debug:
+            print(f"DEBUG: After trigsimp(): {result}")
+    except:
+        pass
+    
+    # Apply general simplification (preserves exact forms)
+    try:
+        result = simplify(result)
+        if debug:
+            print(f"DEBUG: After simplify(): {result}")
+    except:
+        pass
+    
+    # Convert to string for pattern-based cleanup
     result_str = str(result)
     if debug:
-        print(f"DEBUG: Original result string: '{result_str}'")
+        print(f"DEBUG: Result string: '{result_str}'")
     
-    # Apply direct string-based replacement for known patterns
+    # Apply string-based replacements for patterns that SymPy might miss
     replacements = {
+        'log(e)': '1',
+        'log(E)': '1',
+        '*log(e)': '',  # Remove *log(e) completely
+        '*log(E)': '',  # Remove *log(E) completely
+        'log(e)*': '',  # Remove log(e)* completely
+        'log(E)*': '',  # Remove log(E)* completely
+        # Trigonometric constants
         'sin(pi)': '0',
         'sin(2*pi)': '0', 
         'sin(-pi)': '0',
@@ -18,8 +60,6 @@ def clean_trig_result(result, debug=False):
         'cos(-pi)': '-1',
         'sin(0)': '0',
         'cos(0)': '1',
-        'log(e)':'1',
-        # Handle common variations
         'sin(pi)**2': '0',
         'cos(pi)**2': '1'
     }
@@ -30,7 +70,7 @@ def clean_trig_result(result, debug=False):
         if pattern in result_str:
             result_str = result_str.replace(pattern, replacement)
             if debug:
-                print(f"DEBUG: Replaced '{pattern}' with '{replacement}' in result")
+                print(f"DEBUG: Replaced '{pattern}' with '{replacement}'")
     
     # If we made string replacements, convert back to sympy expression
     if result_str != original_str:
@@ -38,69 +78,16 @@ def clean_trig_result(result, debug=False):
             result = sympify(result_str)
             if debug:
                 print(f"DEBUG: After string replacement: {result}")
-        except:
+        except Exception as e:
             if debug:
-                print("DEBUG: Failed to sympify after string replacement")
+                print(f"DEBUG: Failed to sympify after string replacement: {e}")
+            # If sympify fails, keep the original result
             pass
     
-    # Force numerical evaluation
-    try:
-        result = result.evalf()
-        if debug:
-            print(f"DEBUG: After evalf(): {result}")
-    except:
-        pass
-    
-    # Apply trigonometric simplification
-    result = trigsimp(result)
     if debug:
-        print(f"DEBUG: After trigsimp(): {result}")
+        print(f"DEBUG: Final result: {result}")
     
-    # Force another round of numerical evaluation
-    try:
-        result = N(result, 15)
-        if debug:
-            print(f"DEBUG: After N(): {result}")
-    except:
-        pass
-    
-    # Handle complex numbers with tiny imaginary parts
-    try:
-        if hasattr(result, 'as_real_imag'):
-            real_part, imag_part = result.as_real_imag()
-            if abs(imag_part) < 1e-10:
-                result = real_part
-                if debug:
-                    print(f"DEBUG: Extracted real part: {result}")
-    except:
-        pass
-    
-    # Clean up small numbers and near-integers
-    try:
-        if abs(result) < 1e-10:
-            if debug:
-                print("DEBUG: Result is near zero, returning '0'")
-            return "0"
-        elif abs(result - round(result)) < 1e-10:
-            int_result = str(int(round(result)))
-            if debug:
-                print(f"DEBUG: Result is near integer, returning '{int_result}'")
-            return int_result
-        else:
-            # Try to simplify to a nice rational if possible
-            try:
-                simplified = nsimplify(result, tolerance=1e-10)
-                if debug:
-                    print(f"DEBUG: Simplified to: {simplified}")
-                return str(simplified)
-            except:
-                if debug:
-                    print(f"DEBUG: Returning as-is: {result}")
-                return str(result)
-    except Exception as e:
-        if debug:
-            print(f"DEBUG: Exception in final cleanup: {e}")
-        return str(result)
+    return result
 
 def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
     try:
@@ -115,6 +102,9 @@ def solve_partial_derivative(expr: str, variables: list, order: int = 1) -> str:
             derivative = expression
         else:
             derivative = diff(expression, *differentiation_variables)
+        
+        # Clean up the result
+        derivative = clean_trig_result(derivative)
         return str(derivative)
 
     except Exception as e:
@@ -153,13 +143,16 @@ def solve_arc_length(exprs: list, param: str, a: str, b: str) -> str:
                     # Round to 5 decimal places for real numbers
                     return str(round(float(result), 5))
                 else:
-                    # For complex numbers, return the symbolic form
+                    # For complex numbers, clean and return the symbolic form
+                    result = clean_trig_result(result)
                     return str(result)
             else:
-                # If it's still symbolic, return as-is
+                # If it's still symbolic, clean and return as-is
+                result = clean_trig_result(result)
                 return str(result)
         except:
-            # If evaluation fails, return the symbolic result
+            # If evaluation fails, clean and return the symbolic result
+            result = clean_trig_result(result)
             return str(result)
 
     except Exception as e:
@@ -169,8 +162,8 @@ def solve_gradient(expr: str, variables: list) -> list[str]:
     try:
         expression = sympify(expr)
         sym_vars = [symbols(v) for v in variables]
-        grad = [str(diff(expression, var)) for var in sym_vars]
-        return grad
+        grad = [clean_trig_result(diff(expression, var)) for var in sym_vars]
+        return [str(g) for g in grad]
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -202,6 +195,9 @@ def solve_multiple_integral(expr: str, limits: list) -> str:
         # Final simplification
         result = expression.simplify()
         
+        # Clean up log(e) and other expressions
+        result = clean_trig_result(result)
+        
         final_str = str(result)
         return final_str
         
@@ -219,6 +215,9 @@ def solve_divergence(vector_field: list, variables: list) -> str:
         components = [sympify(c) for c in vector_field]
         sym_vars = [symbols(v) for v in variables]
         div = sum(diff(components[i], sym_vars[i]) for i in range(len(components)))
+        
+        # Clean up the result
+        div = clean_trig_result(div)
         return str(div)
     except Exception as e:
         return f"Error: {str(e)}"
@@ -234,6 +233,11 @@ def solve_curl(vector_field: list[str], variables: list[str]) -> list[str]:
         curl_x = diff(F3, y) - diff(F2, z)
         curl_y = diff(F1, z) - diff(F3, x)
         curl_z = diff(F2, x) - diff(F1, y)
+
+        # Clean up each component
+        curl_x = clean_trig_result(curl_x)
+        curl_y = clean_trig_result(curl_y)
+        curl_z = clean_trig_result(curl_z)
 
         return [str(curl_x), str(curl_y), str(curl_z)]
     except Exception as e:
@@ -264,7 +268,10 @@ def solve_line_integral(field, param: str, curve: list, bounds: list = [0, 1]) -
             return "Error: Field must be a string or list"
 
         result = integrate(integrand, (t, a, b))
-        return str(result.evalf())
+        
+        # Clean up the result
+        result = clean_trig_result(result)
+        return str(result)
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -297,6 +304,9 @@ def solve_surface_integral(field, params, surface, bounds, field_vars=("x", "y",
             return "Error: Could not determine field type (expected scalar or 3D vector)."
 
         result = integrate(integrand, (u, bounds[0][0], bounds[0][1]), (v, bounds[1][0], bounds[1][1])).doit()
+        
+        # Clean up the result
+        result = clean_trig_result(result)
         return str(result)
 
     except Exception as e:
@@ -322,10 +332,12 @@ def solve_directional_derivative(expr: str, variables: list, direction: list, po
             if len(point) != len(variables):
                 return "Error: Point must have the same dimension as variables."
             subs_dict = dict(zip(sym_vars, point))
-            evaluated_value = directional_derivative.evalf(subs=subs_dict)
-            evaluated_value = sympify(evaluated_value)
+            # Use symbolic substitution instead of numeric evaluation
+            evaluated_value = directional_derivative.subs(subs_dict)
+            evaluated_value = clean_trig_result(evaluated_value)
             return str(evaluated_value)
         
+        directional_derivative = clean_trig_result(directional_derivative)
         return str(directional_derivative)
     
     except Exception as e:
@@ -340,6 +352,8 @@ def solve_greens_theorem(vector_field: list, region_bounds: list, variables: lis
         (x_lower, x_upper), (y_lower, y_upper) = region_bounds
         result = integrate(integrate(curl_2d, (x, x_lower, x_upper)), (y, y_lower, y_upper))
 
+        # Clean up the result
+        result = clean_trig_result(result)
         return str(result)
     
     except Exception as e:
@@ -365,6 +379,9 @@ def solve_stokes_theorem(vector_field: list, params: list, surface: list, bounds
         curl_sub = curl.subs(substitutions)
 
         result = integrate(curl_sub.dot(normal), (u, bounds[0][0], bounds[0][1]), (v, bounds[1][0], bounds[1][1]))        
+        
+        # Clean up the result
+        result = clean_trig_result(result)
         return str(simplify(result))
     except Exception as e:
         return f"Error: {str(e)}"
@@ -488,8 +505,9 @@ def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr
                                 is_valid = False
                                 break
                         except:
-                            # If can't evaluate to float, keep symbolic
+                            # If can't evaluate to float, keep symbolic but clean it first
                             if val.is_real is not False:  # Not explicitly complex
+                                val = clean_trig_result(val)
                                 clean_sol[result_key] = str(val)
                             else:
                                 is_valid = False
@@ -506,6 +524,7 @@ def solve_lagrange_multipliers(f_expr: str, g_expr: str, variables: list, h_expr
                     try:
                         clean_sol["f_value"] = round(float(f_val.evalf()), 6)
                     except:
+                        f_val = clean_trig_result(f_val)
                         clean_sol["f_value"] = str(f_val)
                     
                     # Check constraint satisfaction

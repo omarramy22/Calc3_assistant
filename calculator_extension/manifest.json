@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Calc Assistant",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A multivariable calculus assistant with symbolic computations for Chrome and Firefox.",
 
   "icons": {
@@ -17,7 +17,7 @@
   },
 
 "background": {
-  "scripts": ["background.js"]
+  "service_worker": "background.js" 
 },
 
   "permissions": [
