@@ -2,6 +2,24 @@ from sympy import sympify, symbols, latex
 from sympy.parsing.latex import parse_latex
 import re
 
+def preprocess_constraint(constraint_str):
+    """
+    Convert constraint equations like 'x+y = 1' to expressions like 'x+y-1'
+    """
+    if not constraint_str or '=' not in constraint_str:
+        return constraint_str
+    # Split by '=' and convert to expression form
+    parts = constraint_str.split('=')
+    if len(parts) == 2:
+        left_side = parts[0].strip()
+        right_side = parts[1].strip()
+        # Convert 'left = right' to 'left - right'
+        # Handle cases where right side is 0
+        if right_side == '0':
+            return left_side
+        else:
+            return f"({left_side}) - ({right_side})"
+    return constraint_str
 def extract_variables_from_string(expr_str):
                 """Extract variable names from mathematical expressions using regex"""
                 if not expr_str:

@@ -1,0 +1,362 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from sympy import sympify
+from sympy.parsing.latex import parse_latex
+
+from calc3 import (
+    solve_partial_derivative,
+    solve_multiple_integral,
+    solve_arc_length,
+    solve_gradient,
+    solve_divergence,
+    solve_curl,
+    solve_line_integral,
+    solve_surface_integral,
+    solve_directional_derivative,
+    solve_greens_theorem,
+    solve_stokes_theorem,
+    solve_lagrange_multipliers
+)
+
+from parser import (
+    parse_expression,
+    parse_integral_latex,
+    parse_vector,
+    parse_limits,
+    parse_integral_limits,
+    extract_variables_from_string,
+    preprocess_constraint
+)
+
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    try:
+        data = request.json
+        operation = data.get("operation", "")
+        
+        print(f"Operation: {operation}")
+        print(f"Request data: {data}")
+
+        if operation == "partial_derivative":
+            function_str = data.get("function", "")
+            variables_str = data.get("variables", "")
+
+            # Parse using SymPy
+            function_expr = parse_expression(function_str)
+            variables = parse_vector(variables_str)
+            order = 1
+            return jsonify({
+                "result": solve_partial_derivative(str(function_expr), variables, order)
+            })
+            
+        elif operation in ["double_integral", "double_integral_polar"]:
+            expression_str = data.get("function", "")
+            variables_str = data.get("variables", "x,y" if operation == "double_integral" else "r,theta")
+            limits_str = data.get("limits", "0,1,0,1" if operation == "double_integral" else "0,1,0,2*pi")
+            
+            if not expression_str.strip():
+                return jsonify({"error": "Expression cannot be empty"}), 400
+            
+            # Check if it's a LaTeX integral template
+            if '\\int' in expression_str:
+                integrand, latex_limits = parse_integral_latex(expression_str)
+                if latex_limits:
+                    limits = latex_limits
+                else:
+                    variables = parse_vector(variables_str)
+                    limits = parse_integral_limits(limits_str, variables)
+            else:
+                # Regular expression
+                integrand_expr = parse_expression(expression_str)
+                integrand = str(integrand_expr)
+                variables = parse_vector(variables_str)
+                limits = parse_integral_limits(limits_str, variables)
+            
+            return jsonify({
+                "result": solve_multiple_integral(integrand, limits)
+            })
+            
+        elif operation in ["triple_integral", "triple_integral_polar", "triple_integral_cylindrical"]:
+            expression_str = data.get("function", "")
+            
+            # Default variables based on coordinate system
+            if operation == "triple_integral":
+                default_vars = "x,y,z"
+                default_limits = "0,1,0,1,0,1"
+            else:  # polar or cylindrical
+                default_vars = "r,theta,z"
+                default_limits = "0,1,0,2*pi,0,1"
+            
+            variables_str = data.get("variables", default_vars)
+            limits_str = data.get("limits", default_limits)
+            
+            if not expression_str.strip():
+                return jsonify({"error": "Expression cannot be empty"}), 400
+            
+            # Check if it's a LaTeX integral template
+            if '\\int' in expression_str:
+                integrand, latex_limits = parse_integral_latex(expression_str)
+                if latex_limits:
+                    limits = latex_limits
+                else:
+                    variables = parse_vector(variables_str)
+                    limits = parse_integral_limits(limits_str, variables)
+            else:
+                # Regular expression
+                integrand_expr = parse_expression(expression_str)
+                integrand = str(integrand_expr)
+                variables = parse_vector(variables_str)
+                limits = parse_integral_limits(limits_str, variables)
+            
+            return jsonify({
+                "result": solve_multiple_integral(integrand, limits)
+            })
+            
+        elif operation == "arc_length":
+            parametric_str = data.get("parametric", "")
+            parameter_str = data.get("parameter", "t")
+            limits_str = data.get("limits", "0,1")
+            
+            # Parse parametric functions
+            parametric_functions = parse_vector(parametric_str)
+            parameter = parameter_str.strip() if parameter_str.strip() else 't'
+            limits = parse_limits(limits_str)
+            
+            return jsonify({
+                "result": solve_arc_length(parametric_functions, parameter, str(limits[0]), str(limits[1]))
+            })
+            
+        elif operation == "gradient":
+            function_str = data.get("function", "")
+            variables_str = data.get("variables", "x,y,z")
+            point_str = data.get("point", "")
+            
+            function_expr = parse_expression(function_str)
+            variables = parse_vector(variables_str)
+            point = parse_vector(point_str) if point_str else None
+            
+            return jsonify({
+                "result": solve_gradient(str(function_expr), variables, point)
+            })
+            
+        elif operation == "divergence":
+            vector_field_str = data.get("vector_field", "")
+            
+            vector_field = parse_vector(vector_field_str)
+            variables = ['x', 'y', 'z'][:len(vector_field)]
+            
+            return jsonify({
+                "result": solve_divergence(vector_field, variables)
+            })
+            
+        elif operation == "curl":
+            vector_field_str = data.get("vector_field", "")
+            
+            vector_field = parse_vector(vector_field_str)
+            variables = ['x', 'y', 'z']  # Curl is always 3D
+            
+            return jsonify({
+                "result": solve_curl(vector_field, variables)
+            })
+            
+        elif operation in ["scalar_line_integral", "vector_line_integral"]:
+            field_str = data.get("function" if operation == "scalar_line_integral" else "vector_field", "")
+            curve_str = data.get("curve", "")
+            limits_str = data.get("limits", "0,1")
+            
+            # Parse field (scalar string or vector list)
+            if operation == "scalar_line_integral":
+                field_expr = parse_expression(field_str)
+                field = str(field_expr)
+            else:
+                field = parse_vector(field_str)
+            
+            curve = parse_vector(curve_str)
+            limits = parse_limits(limits_str)
+            
+            return jsonify({
+                "result": solve_line_integral(field, 't', curve, limits)
+            })
+            
+        elif operation == "surface_integral":
+            vector_field_str = data.get("vector_field", "")
+            surface_str = data.get("surface", "")
+            u_bounds_str = data.get("u_bounds", "0,1")  # New field for u bounds
+            v_bounds_str = data.get("v_bounds", "0,1")  # New field for v bounds
+            
+            vector_field = parse_vector(vector_field_str)
+            surface = parse_vector(surface_str)  # Parse as vector/tuple
+            
+            # Extract variables using regex method
+            all_vars = set()
+            
+            # Get variables from vector field components
+            for field_component in vector_field:
+                field_vars = extract_variables_from_string(field_component)
+                all_vars.update(field_vars)
+            
+            # Get variables from surface components
+            for surface_component in surface:
+                surface_vars = extract_variables_from_string(surface_component)
+                all_vars.update(surface_vars)
+            
+            # Filter parameters (excluding x, y, z which are coordinate variables)
+            excluded = {'x', 'y', 'z'}
+            params = [var for var in all_vars if var not in excluded]
+            params.sort()  # Sort for consistency
+            
+            # If no parameters found, use default u, v
+            if not params:
+                params = ['u', 'v']
+            elif len(params) == 1:
+                params.append('v')  # Add second parameter if only one found
+            
+            # Extract coordinate variables (x, y, z) for the function call
+            variables = [var for var in all_vars if var in {'x', 'y', 'z'}]
+            if not variables:
+                variables = ['x', 'y', 'z']  # Default variables
+            variables.sort()  # Sort for consistency
+            
+            # Parse the bounds for u and v
+            u_bounds = parse_limits(u_bounds_str)
+            v_bounds = parse_limits(v_bounds_str)
+            bounds = [(u_bounds[0], u_bounds[1]), (v_bounds[0], v_bounds[1])]
+            
+            return jsonify({
+                "result": solve_surface_integral(vector_field, params, surface, bounds, variables)
+            })
+            
+        elif operation == "directional_derivative":
+            function_str = data.get("function", "")
+            direction_str = data.get("direction", "")
+            point_str = data.get("point", "")
+            
+            function_expr = parse_expression(function_str)
+            direction = parse_vector(direction_str)
+            point = parse_vector(point_str) if point_str else None
+            
+            variables = ['x', 'y', 'z'][:len(direction)]
+
+            return jsonify({
+                "result": solve_directional_derivative(str(function_expr), variables, direction, point)
+            })
+            
+        elif operation == "greens_theorem":
+            vector_field_str = data.get("vector_field", "")
+            x_bounds_str = data.get("x_bounds", "0,1")  # New field for x bounds
+            y_bounds_str = data.get("y_bounds", "0,1")  # New field for y bounds
+            
+            vector_field = parse_vector(vector_field_str)
+            
+            # Extract variables using regex method
+            all_vars = set()
+            for field_component in vector_field:
+                field_vars = extract_variables_from_string(field_component)
+                all_vars.update(field_vars)
+            
+            # Filter coordinate variables for Green's theorem (2D)
+            excluded = {'u', 'v', 't', 'r', 'theta', 'phi', 'rho'}
+            variables = [var for var in all_vars if var not in excluded]
+            variables.sort()  # Sort for consistency
+            
+            # Default to x, y if no variables found or keep it 2D
+            if not variables or len(variables) < 2:
+                variables = ['x', 'y']
+            else:
+                # Keep only first 2 variables for Green's theorem (2D)
+                variables = variables[:2]
+            
+            # Parse the bounds for x and y
+            x_bounds = parse_limits(x_bounds_str)
+            y_bounds = parse_limits(y_bounds_str)
+            bounds = [(x_bounds[0], x_bounds[1]), (y_bounds[0], y_bounds[1])]
+            
+            return jsonify({
+                "result": solve_greens_theorem(vector_field, bounds, variables)
+            })
+            
+        elif operation == "stokes_theorem":
+            vector_field_str = data.get("vector_field", "")
+            surface_str = data.get("surface", "")
+            u_bounds_str = data.get("u_bounds", "0,1")  # New field for u bounds
+            v_bounds_str = data.get("v_bounds", "0,1")  # New field for v bounds
+            
+            vector_field = parse_vector(vector_field_str)
+            surface = parse_vector(surface_str)  # Parse as vector/tuple
+            
+            # Extract variables using regex method
+            all_vars = set()
+            
+            # Get variables from vector field components
+            for field_component in vector_field:
+                field_vars = extract_variables_from_string(field_component)
+                all_vars.update(field_vars)
+            
+            # Get variables from surface components
+            for surface_component in surface:
+                surface_vars = extract_variables_from_string(surface_component)
+                all_vars.update(surface_vars)
+            
+            # Filter parameters (excluding x, y, z which are coordinate variables)
+            excluded = {'x', 'y', 'z'}
+            params = [var for var in all_vars if var not in excluded]
+            params.sort()  # Sort for consistency
+            
+            # If no parameters found, use default u, v
+            if not params:
+                params = ['u', 'v']
+            elif len(params) == 1:
+                params.append('v')  # Add second parameter if only one found
+            
+            # Extract coordinate variables (x, y, z) for the function call
+            variables = [var for var in all_vars if var in {'x', 'y', 'z'}]
+            if not variables:
+                variables = ['x', 'y', 'z']  # Default variables
+            variables.sort()  # Sort for consistency
+            
+            # Parse the bounds for u and v
+            u_bounds = parse_limits(u_bounds_str)
+            v_bounds = parse_limits(v_bounds_str)
+            bounds = [(u_bounds[0], u_bounds[1]), (v_bounds[0], v_bounds[1])]
+            
+            return jsonify({
+                "result": solve_stokes_theorem(vector_field, params, surface, bounds, variables)
+            })
+            
+        elif operation == "lagrange_multipliers":
+            function_str = data.get("function", "")
+            constraint_str = data.get("constraint", "")
+            
+            constraint_str = preprocess_constraint(constraint_str)
+            # Extract variables from both expressions
+            func_vars = extract_variables_from_string(function_str)
+            constraint_vars = extract_variables_from_string(constraint_str)
+            all_vars = func_vars.union(constraint_vars)
+            
+            # Convert to sorted list
+            variables = sorted(list(all_vars))
+            
+            if not variables:
+                return jsonify({"error": "Could not extract variables from the function and constraint."}), 400
+            
+            # Parse expressions for clean formatting
+            function_expr = parse_expression(function_str)
+            constraint_expr = parse_expression(constraint_str)
+            
+
+            return jsonify({
+                "result": solve_lagrange_multipliers(str(function_expr), str(constraint_expr), variables)
+            })
+            
+        else:
+            return jsonify({"error": f"Unknown operation: {operation}"}), 400
+            
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
