@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Calc Assistant",
+  "name": "Calc3 Assistant",
   "version": "1.2.0",
   "description": "A multivariable calculus assistant with symbolic computations for Chrome and Firefox.",
 
