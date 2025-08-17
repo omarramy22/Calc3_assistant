@@ -225,7 +225,9 @@ def parse_limits(limits_str):
         parts = limits_str.split(',')
         if len(parts) == 2:
             try:
-                return [sympify(parts[0].strip()), sympify(parts[1].strip())]
+                lower = parse_expression(parts[0].strip())
+                upper = parse_expression(parts[1].strip())
+                return [sympify(lower) if lower else 0, sympify(upper) if upper else 1]
             except:
                 return [0, 1]
     
@@ -234,7 +236,9 @@ def parse_limits(limits_str):
         parts = limits_str.lower().split('to')
         if len(parts) == 2:
             try:
-                return [sympify(parts[0].strip()), sympify(parts[1].strip())]
+                lower = parse_expression(parts[0].strip())
+                upper = parse_expression(parts[1].strip())
+                return [sympify(lower) if lower else 0, sympify(upper) if upper else 1]
             except:
                 return [0, 1]
     
@@ -242,7 +246,9 @@ def parse_limits(limits_str):
     parts = limits_str.split()
     if len(parts) == 2:
         try:
-            return [sympify(parts[0]), sympify(parts[1])]
+            lower = parse_expression(parts[0])
+            upper = parse_expression(parts[1])
+            return [sympify(lower) if lower else 0, sympify(upper) if upper else 1]
         except:
             return [0, 1]
     
