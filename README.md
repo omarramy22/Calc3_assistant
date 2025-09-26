@@ -72,8 +72,8 @@ A comprehensive mathematical calculator designed for college students, featuring
 ### Quick Start
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/omarramy22/AUC_calculator.git
-   cd AUC_calculator
+   git clone https://github.com/omarramy22/Calc3_assistant.git
+   cd Calc3_assistant
    ```
 
 2. **Install Python dependencies**
@@ -130,11 +130,6 @@ x^2 + y                     # Powers and variables
 \int_{0}^{1} x dx          # Integrals
 ```
 
-### Expression Features
-- **Automatic cleanup**: `log(e)` terms are removed automatically
-- **Exact results**: Preserves `sqrt(2)`, `pi/4`, exact fractions
-- **LaTeX preprocessing**: Fixes `\sqrt2` → `\sqrt{2}` automatically
-- **Error handling**: Graceful parsing of malformed expressions
 
 ### API Endpoints
 ```
@@ -274,7 +269,7 @@ POST /calculate
 
 ### Development Guidelines
 - Write clear, documented code following existing patterns
-- Add `clean_trig_result()` calls to new mathematical functions
+- use * when multiplying things like 2x, so it becomes 2*x
 - Test LaTeX parsing with edge cases like `\sqrt2`, `\sinx`
 - Ensure exact symbolic computation is preserved
 - Update documentation when adding features
@@ -298,8 +293,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For questions, issues, or suggestions:
-- 🐛 [Open an Issue](https://github.com/omarramy22/AUC_calculator/issues)
-- 📧 Contact: [Your Email]
+- 🐛 [Open an Issue](https://github.com/omarramy22/Calc3_assistant/issues)
+- 📧 Contact: Omarramy@aucegypt.edu
 - 💬 Discussions: [GitHub Discussions]
 
 ---
