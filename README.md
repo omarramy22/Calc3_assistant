@@ -1,6 +1,6 @@
-# 🧮 AUC Calculator
+# 🧮 Calc3_assistant
 
-A comprehensive mathematical calculator designed for AUC students, featuring advanced calculus operations, vector calculus, and LaTeX expression parsing with exact symbolic computation.
+A comprehensive mathematical calculator designed for college students, featuring advanced calculus operations, vector calculus, and LaTeX expression parsing with exact symbolic computation.
 
 ## 📖 Table of Contents
 - [Features](#-features)
